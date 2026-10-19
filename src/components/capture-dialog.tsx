@@ -114,7 +114,7 @@ export default function CaptureDialog({
       setDraft((d) => ({ ...d, product_url: url }));
       setReady(true);
       setNotice(
-        "Sign in to fetch details from shopping sites. You can try manual capture in this demo.",
+        "Sign in to fetch product details. You can save a manual entry to this device now. Guest screenshots last only until you reload.",
       );
       return;
     }

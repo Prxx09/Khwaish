@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Eye,
@@ -22,16 +22,47 @@ export default function AuthDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [emailValue, setEmailValue] = useState("");
+  useEffect(() => {
+    if (open) {
+      setError("");
+      setMessage("");
+      setMode("login");
+    }
+  }, [open]);
+  async function resendConfirmation() {
+    if (!emailValue.trim() || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { error } = await createClient().auth.resend({
+        type: "signup",
+        email: emailValue.trim(),
+        options: { emailRedirectTo: `${location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      setMessage("Confirmation requested. Check your inbox and spam folder.");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Could not resend confirmation.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError("");
     setMessage("");
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email")).trim();
     const password = String(form.get("password") ?? "");
-    const supabase = createClient();
     try {
+      const supabase = createClient();
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -91,6 +122,7 @@ export default function AuthDialog({
         {(["login", "signup"] as const).map((m) => (
           <button
             key={m}
+            disabled={busy}
             className={mode === m ? "active" : ""}
             onClick={() => {
               setMode(m);
@@ -121,6 +153,8 @@ export default function AuthDialog({
             <Mail size={17} />
             <input
               name="email"
+              value={emailValue}
+              onChange={(e) => setEmailValue(e.target.value)}
               type="email"
               autoComplete="email"
               required
@@ -157,6 +191,17 @@ export default function AuthDialog({
           </label>
         )}
         <ErrorText>{error}</ErrorText>
+        {(error.toLowerCase().includes("confirm") ||
+          message.includes("confirm your account")) && (
+          <button
+            type="button"
+            className="btn secondary"
+            disabled={busy || !emailValue.trim()}
+            onClick={resendConfirmation}
+          >
+            Resend confirmation email
+          </button>
+        )}
         {message && (
           <p className="notice success" role="status">
             {message}
@@ -176,6 +221,7 @@ export default function AuthDialog({
           <button
             type="button"
             className="text-btn centered"
+            disabled={busy}
             onClick={() => setMode("reset")}
           >
             Forgot your password?

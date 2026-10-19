@@ -1,0 +1,298 @@
+/* Readable type, expressive navigation, and usable interaction targets. */
+.main-nav button,
+.space-link,
+.settings-link {
+  font-size: 15px;
+  min-height: 46px;
+}
+.workspace-label,
+.sidebar-section > div:first-child {
+  font-size: 11px;
+  letter-spacing: 0.13em;
+}
+.sidebar {
+  background:
+    radial-gradient(
+      ellipse at 0 0,
+      color-mix(in srgb, var(--purple) 10%, transparent),
+      transparent 60%
+    ),
+    var(--sidebar);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 22px;
+}
+.main-nav button {
+  position: relative;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.main-nav button:hover {
+  transform: translateX(4px);
+  background: var(--panel-hover);
+}
+.main-nav button.active {
+  box-shadow: 0 7px 25px color-mix(in srgb, var(--accent) 15%, transparent);
+  background: var(--accent);
+}
+.main-nav button.active:before {
+  content: "";
+  width: 3px;
+  height: 22px;
+  background: var(--accent-text);
+  position: absolute;
+  left: 0;
+  border-radius: 4px;
+}
+.sidebar-promo {
+  padding: 20px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--purple) 20%, var(--panel)),
+    var(--panel)
+  );
+  border-color: color-mix(in srgb, var(--purple) 30%, var(--line));
+}
+.sidebar-promo h3 {
+  font-size: 21px;
+}
+.sidebar-promo p,
+.sidebar-promo button {
+  font-size: 13px;
+}
+.sidebar-promo button {
+  min-height: 40px;
+}
+.account {
+  margin: 12px 0 18px;
+  padding: 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--accent-soft), var(--panel));
+  gap: 10px;
+}
+.account-avatar {
+  padding: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.account-avatar .avatar {
+  background: linear-gradient(135deg, var(--purple), #d7fa78);
+  color: #222;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--purple) 10%, transparent);
+}
+.account strong {
+  font-size: 13px;
+}
+.account > div > span {
+  font-size: 12px;
+}
+.account .icon-btn {
+  flex-shrink: 0;
+}
+.btn,
+.segmented button,
+.detail-tabs button {
+  font-size: 14px;
+  min-height: 44px;
+}
+.icon-btn,
+.mini-icon,
+.card-open,
+.save-heart {
+  min-width: 40px;
+  min-height: 40px;
+}
+.breadcrumb,
+.demo-banner,
+.demo-banner button {
+  font-size: 13px;
+}
+.hero-copy p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.section-heading p,
+.page-heading p,
+.stat > div > span {
+  font-size: 14px;
+}
+.stat strong {
+  font-size: 27px;
+}
+.stat small {
+  font-size: 12px;
+}
+.search-input input,
+.query-input input,
+.filters select,
+.form-stack input,
+.form-stack select,
+.form-stack textarea {
+  font-size: 16px;
+}
+.category-pills button,
+.category-tabs button {
+  font-size: 13px;
+  min-height: 38px;
+}
+.product-title {
+  font-size: 17px;
+  line-height: 1.5;
+}
+.card-meta,
+.variant {
+  font-size: 12px;
+}
+.product-card-bottom strong {
+  font-size: 20px;
+}
+.product-card-bottom s {
+  font-size: 13px;
+}
+.product-card {
+  cursor: pointer;
+  transition:
+    transform 0.25s,
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.product-card:hover,
+.product-card:focus-within {
+  transform: translateY(-6px);
+  border-color: var(--purple);
+  box-shadow: 0 16px 38px #0002;
+}
+.product-card .product-image {
+  transition: transform 0.45s;
+}
+.product-card:hover .product-image {
+  transform: scale(1.045);
+}
+.card-open {
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.product-card:hover .card-open {
+  background: var(--accent);
+  color: var(--accent-text);
+  transform: rotate(8deg);
+}
+.save-heart.saved {
+  animation: heart-pop 0.3s ease-out;
+}
+.modal {
+  width: 540px;
+  margin: auto;
+}
+.modal-head p,
+.form-stack label,
+.form-footnote,
+.notice,
+.error-text {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.form-stack input,
+.form-stack select {
+  min-height: 46px;
+}
+.settings-card p,
+.settings-card label,
+.connection-row,
+.detail-section p,
+.detail-section label {
+  font-size: 14px;
+}
+.settings-card h3,
+.detail-section h3 {
+  font-size: 20px;
+}
+.empty-state p {
+  font-size: 15px;
+}
+.text-btn {
+  font-size: 14px;
+  min-height: 40px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--purple);
+  outline-offset: 4px;
+}
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+.reveal-enter {
+  animation: reveal-enter 0.5s ease-out both;
+}
+@keyframes reveal-enter {
+  from {
+    opacity: 0.25;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes heart-pop {
+  50% {
+    transform: scale(1.2);
+  }
+}
+@media (max-width: 760px) {
+  .sidebar {
+    width: min(310px, 88vw);
+    padding-bottom: 24px;
+  }
+  .hero-copy p {
+    font-size: 14px;
+  }
+  .product-title {
+    font-size: 15px;
+  }
+  .product-card-bottom strong {
+    font-size: 17px;
+  }
+  .stat strong {
+    font-size: 21px;
+  }
+  .stat small,
+  .card-meta {
+    font-size: 11px;
+  }
+  .stat > div > span {
+    font-size: 12px;
+  }
+  .demo-banner {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .product-card:hover {
+    transform: none;
+  }
+  .modal {
+    width: calc(100vw - 28px);
+  }
+  .mobile-nav > button {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-enter,
+  .save-heart.saved {
+    animation: none;
+  }
+  .product-card,
+  .main-nav button,
+  .product-card .product-image {
+    transition: none;
+  }
+}

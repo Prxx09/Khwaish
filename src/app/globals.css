@@ -58,7 +58,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "DM Sans", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   transition:
     background 0.3s,
@@ -542,6 +542,7 @@ button svg {
   max-width: 1680px;
   margin: auto;
 }
+.icon-btn.mobile-only,
 .mobile-only,
 .mobile-nav {
   display: none;
@@ -3173,6 +3174,7 @@ dialog::backdrop {
   .app-main {
     margin-left: 0;
   }
+  .icon-btn.mobile-only,
   .mobile-only {
     display: inline-flex;
   }

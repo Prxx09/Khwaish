@@ -130,6 +130,38 @@ export default function Workspace() {
       )?.role;
   const notify = useCallback((message: string) => setToast(message), []);
 
+  useEffect(() => {
+    if (shareOpen && isDemo) {
+      setShareOpen(false);
+      setAuthOpen(true);
+      notify("Sign in to create a shared space with your people.");
+    }
+  }, [shareOpen, isDemo, notify]);
+  useEffect(() => {
+    if (
+      !window.IntersectionObserver ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("reveal-enter");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08 },
+    );
+    document
+      .querySelectorAll(
+        ".stats-grid, .shelf-section, .settings-card, .shared-card",
+      )
+      .forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [view, loading]);
+
   const loadAccount = useCallback(async (id: string, background = false) => {
     const version = ++loadVersion.current;
     const client = createClient();
@@ -232,10 +264,11 @@ export default function Workspace() {
     }
     const client = createClient();
     let live = true;
+    let authEventReceived = false;
     client.auth
       .getUser()
       .then(({ data }) => {
-        if (live) {
+        if (live && !authEventReceived) {
           setUser(data.user);
           setAuthReady(true);
         }
@@ -247,7 +280,12 @@ export default function Workspace() {
       data: { subscription },
     } = client.auth.onAuthStateChange((_event, session) => {
       if (live) {
+        authEventReceived = true;
         setUser(session?.user ?? null);
+        if (_event === "PASSWORD_RECOVERY") {
+          setView("settings");
+          notify("Choose a new password in your profile settings.");
+        }
         if (_event === "SIGNED_OUT") {
           loadVersion.current++;
           setItems([]);
@@ -255,6 +293,9 @@ export default function Workspace() {
           setMemberships([]);
           setProfile(null);
           setDataOwner(null);
+          setSelectedId(null);
+          setShareOpen(false);
+          setCaptureOpen(false);
         }
         setAuthReady(true);
       }
@@ -276,7 +317,9 @@ export default function Workspace() {
       setLoading(false);
       setLoadError("");
       setProfile(null);
-      let demoLibraries: Library[] = DEMO_LIBRARIES;
+      let demoLibraries: Library[] = DEMO_LIBRARIES.filter(
+        (l) => l.kind === "personal",
+      );
       try {
         const stored = JSON.parse(
           localStorage.getItem("khwahish:demo-libraries:v1") ?? "null",
@@ -295,7 +338,7 @@ export default function Workspace() {
       setLibraries(demoLibraries);
       setMemberships([]);
       setActiveId("demo-personal");
-      let saved: Item[] = demoItems();
+      let saved: Item[] = [];
       try {
         const raw = JSON.parse(
           localStorage.getItem("khwahish:demo:v1") ?? "null",
@@ -309,7 +352,9 @@ export default function Workspace() {
               Array.isArray(i.product_media),
           )
         )
-          saved = raw;
+          saved = raw.filter(
+            (i) => !demoItems().some((sample) => sample.id === i.id),
+          );
       } catch {}
       setDataOwner(DEMO_USER);
       setItems(saved);
@@ -487,7 +532,7 @@ export default function Workspace() {
       setItems((items) => [item, ...items]);
       setActiveId(draft.library_id);
       setView("shelf");
-      notify("Wish saved to the demo. Sign in to keep your own library.");
+      notify("Saved on this device. Sign in to save wishes to your account.");
       return true;
     }
     const client = createClient();
@@ -692,7 +737,19 @@ export default function Workspace() {
     }
   }
   async function signOut() {
-    if (configured) await createClient().auth.signOut();
+    if (configured) {
+      try {
+        const { error } = await createClient().auth.signOut();
+        if (error) throw error;
+      } catch (error) {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Sign-out failed. Please try again.",
+        );
+        return;
+      }
+    }
     setUser(null);
     setSelectedId(null);
     setView("shelf");
@@ -837,7 +894,7 @@ export default function Workspace() {
         </div>
         <div className="workspace-label">
           <span className="online-dot" />
-          {isDemo ? "THE DEMO STUDIO" : "YOUR LITTLE UNIVERSE"}
+          {isDemo ? "YOUR GUEST SHELF" : "YOUR LITTLE UNIVERSE"}
         </div>
         <nav className="main-nav" aria-label="Main navigation">
           {NAV.map(({ id, name, Icon }) => (
@@ -930,10 +987,18 @@ export default function Workspace() {
             Settings & profile
           </button>
           <div className="account">
-            <Avatar name={isDemo ? "You" : displayName} />
+            <button
+              className="account-avatar"
+              aria-label={
+                isDemo ? "Sign in to your account" : "Edit your profile"
+              }
+              onClick={() => (isDemo ? setAuthOpen(true) : go("settings"))}
+            >
+              <Avatar name={isDemo ? "You" : displayName} />
+            </button>
             <div>
-              <strong>{isDemo ? "Your future you" : displayName}</strong>
-              <span>{isDemo ? "Make it yours. Sign in." : user?.email}</span>
+              <strong>{isDemo ? "Your space awaits" : displayName}</strong>
+              <span>{isDemo ? "Sign in to save & share" : user?.email}</span>
             </div>
             <button
               className="icon-btn"
@@ -1012,7 +1077,8 @@ export default function Workspace() {
             <div className="demo-banner">
               <span>
                 <span className="live-dot" />
-                You’re exploring the demo. Items and prices are illustrative.
+                Guest shelf · saved on this device. Sign in for private cloud
+                storage and sharing.
               </span>
               <button onClick={() => setAuthOpen(true)}>
                 Create your own shelf <ArrowRight size={14} />
@@ -1793,7 +1859,7 @@ export default function Workspace() {
                   <div className="connection-row">
                     <span>Personal & shared storage</span>
                     <span className="pill">
-                      {isDemo ? "Demo" : "Connected"}
+                      {isDemo ? "This device only" : "Connected"}
                     </span>
                   </div>
                   <div className="connection-row">
@@ -1823,12 +1889,15 @@ export default function Workspace() {
                       className="text-btn"
                       onClick={() => {
                         localStorage.removeItem("khwahish:demo:v1");
-                        setItems(demoItems());
-                        setLibraries(DEMO_LIBRARIES);
-                        notify("Demo shelf reset.");
+                        setItems([]);
+                        setLibraries(
+                          DEMO_LIBRARIES.filter((l) => l.kind === "personal"),
+                        );
+                        setActiveId("demo-personal");
+                        notify("Guest shelf cleared on this device.");
                       }}
                     >
-                      Reset demo shelf
+                      Clear guest shelf
                     </button>
                   ) : (
                     <button className="text-btn" onClick={signOut}>

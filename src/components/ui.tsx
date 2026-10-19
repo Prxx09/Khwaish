@@ -72,7 +72,15 @@ export function Modal({
         onClose();
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target !== e.currentTarget) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (
+          e.clientX < rect.left ||
+          e.clientX > rect.right ||
+          e.clientY < rect.top ||
+          e.clientY > rect.bottom
+        )
+          onClose();
       }}
     >
       <div className="modal-content">
@@ -82,6 +90,7 @@ export function Modal({
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button
+            type="button"
             className="icon-btn"
             onClick={onClose}
             aria-label="Close dialog"

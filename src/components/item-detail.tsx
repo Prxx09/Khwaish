@@ -163,7 +163,10 @@ export default function ItemDetail({
         .eq("wishlist_item_id", item.id)
         .order("created_at");
       if (error) {
-        if (!cancelled) setError(error.message);
+        if (!cancelled) {
+          setError(error.message);
+          setCommentsLoading(false);
+        }
         return;
       }
       const ids = [...new Set((data ?? []).map((c) => c.user_id))];
@@ -237,7 +240,7 @@ export default function ItemDetail({
     try {
       if (isDemo) {
         setOfferMessage(
-          "Demo prices are illustrative. Open a store below to search for this product.",
+          "Sign in to request store matches. You can open the retailer searches below now.",
         );
         return;
       }
@@ -272,17 +275,9 @@ export default function ItemDetail({
     setError("");
     try {
       if (isDemo) {
-        setComments((c) => [
-          ...c,
-          {
-            id: crypto.randomUUID(),
-            wishlist_item_id: item.id,
-            user_id: userId,
-            body: comment.trim(),
-            created_at: new Date().toISOString(),
-            profile: { id: userId, display_name: "You", avatar_path: null },
-          },
-        ]);
+        throw new Error(
+          "Sign in to save comments. Guest comments are not stored.",
+        );
       } else {
         const { data, error } = await createClient()
           .from("item_comments")
@@ -367,7 +362,7 @@ export default function ItemDetail({
       </div>
       <p className="price-disclaimer">
         {isDemo
-          ? "Illustrative demo price."
+          ? "Price entered on this device. Sign in for live checks."
           : latest
             ? `${latest.source.startsWith("saved_") ? "Recorded" : "Checked"} ${new Date(latest.observed_at).toLocaleString("en-IN")} · ${latest.source.replaceAll("_", " ")}`
             : "No current price check yet."}{" "}
@@ -499,7 +494,7 @@ export default function ItemDetail({
             <input
               type="checkbox"
               checked={item.tracking_enabled ?? false}
-              disabled={!canEdit || !item.product_url}
+              disabled={isDemo || !canEdit || !item.product_url}
               onChange={(e) => onUpdate({ tracking_enabled: e.target.checked })}
             />
             <span>
