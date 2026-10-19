@@ -72,6 +72,7 @@ export default function Workspace() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  const [dataOwner, setDataOwner] = useState<string | null>(null);
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [memberships, setMemberships] = useState<Member[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -150,7 +151,9 @@ export default function Workspace() {
       while (true) {
         const { data, error } = await client
           .from("wishlist_items")
-          .select("*,price_observations(*),product_media!media_item_same_library(*)")
+          .select(
+            "*,price_observations(*),product_media!media_item_same_library(*)",
+          )
           .order("created_at", { ascending: false })
           .range(page * 200, page * 200 + 199);
         if (error) throw error;
@@ -179,6 +182,7 @@ export default function Workspace() {
         })),
       }));
       if (version !== loadVersion.current) return;
+      setDataOwner(id);
       setItems(all);
       setLibraries(libResponse.data ?? []);
       setMemberships(memberResponse.data ?? []);
@@ -244,6 +248,14 @@ export default function Workspace() {
     } = client.auth.onAuthStateChange((_event, session) => {
       if (live) {
         setUser(session?.user ?? null);
+        if (_event === "SIGNED_OUT") {
+          loadVersion.current++;
+          setItems([]);
+          setLibraries([]);
+          setMemberships([]);
+          setProfile(null);
+          setDataOwner(null);
+        }
         setAuthReady(true);
       }
     });
@@ -264,7 +276,23 @@ export default function Workspace() {
       setLoading(false);
       setLoadError("");
       setProfile(null);
-      setLibraries(DEMO_LIBRARIES);
+      let demoLibraries: Library[] = DEMO_LIBRARIES;
+      try {
+        const stored = JSON.parse(
+          localStorage.getItem("khwahish:demo-libraries:v1") ?? "null",
+        );
+        if (
+          Array.isArray(stored) &&
+          stored.every(
+            (l) =>
+              typeof l.name === "string" &&
+              typeof l.id === "string" &&
+              l.id.startsWith("demo-"),
+          )
+        )
+          demoLibraries = stored;
+      } catch {}
+      setLibraries(demoLibraries);
       setMemberships([]);
       setActiveId("demo-personal");
       let saved: Item[] = demoItems();
@@ -283,12 +311,17 @@ export default function Workspace() {
         )
           saved = raw;
       } catch {}
+      setDataOwner(DEMO_USER);
       setItems(saved);
     }
   }, [user?.id, authReady, loadAccount]);
   useEffect(() => {
-    if (authReady && isDemo && items.length)
+    if (authReady && isDemo && dataOwner === DEMO_USER && libraries.length)
       try {
+        localStorage.setItem(
+          "khwahish:demo-libraries:v1",
+          JSON.stringify(libraries),
+        );
         localStorage.setItem(
           "khwahish:demo:v1",
           JSON.stringify(
@@ -300,7 +333,7 @@ export default function Workspace() {
           ),
         );
       } catch {}
-  }, [items, isDemo, authReady]);
+  }, [items, libraries, isDemo, authReady, dataOwner]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(""), 5200);
@@ -382,10 +415,16 @@ export default function Workspace() {
     );
     if (sort === "price-low")
       result.sort(
-        (a, b) => (currentPrice(a) ?? Infinity) - (currentPrice(b) ?? Infinity),
+        (a, b) =>
+          a.currency.localeCompare(b.currency) ||
+          (currentPrice(a) ?? Infinity) - (currentPrice(b) ?? Infinity),
       );
     else if (sort === "price-high")
-      result.sort((a, b) => (currentPrice(b) ?? -1) - (currentPrice(a) ?? -1));
+      result.sort(
+        (a, b) =>
+          a.currency.localeCompare(b.currency) ||
+          (currentPrice(b) ?? -1) - (currentPrice(a) ?? -1),
+      );
     else if (sort === "drop")
       result.sort((a, b) => priceDrop(b) - priceDrop(a));
     else
@@ -474,16 +513,14 @@ export default function Workspace() {
         mediaWarning =
           " Your wish was saved, but its screenshot could not upload.";
       else {
-        const media = await client
-          .from("product_media")
-          .insert({
-            library_id: draft.library_id,
-            wishlist_item_id: data.id,
-            uploaded_by: userId,
-            storage_path: path,
-            mime_type: file.type,
-            media_type: "screenshot",
-          });
+        const media = await client.from("product_media").insert({
+          library_id: draft.library_id,
+          wishlist_item_id: data.id,
+          uploaded_by: userId,
+          storage_path: path,
+          mime_type: file.type,
+          media_type: "screenshot",
+        });
         if (media.error) {
           await client.storage.from("wishlist-assets").remove([path]);
           mediaWarning =
@@ -492,17 +529,15 @@ export default function Workspace() {
       }
     }
     if (fields.initial_price != null) {
-      const observation = await client
-        .from("price_observations")
-        .insert({
-          wishlist_item_id: data.id,
-          price: fields.initial_price,
-          currency: fields.currency,
-          availability: draft.availability,
-          source: `saved_${draft.source}`,
-          source_url: fields.product_url,
-          created_by: userId,
-        });
+      const observation = await client.from("price_observations").insert({
+        wishlist_item_id: data.id,
+        price: fields.initial_price,
+        currency: fields.currency,
+        availability: draft.availability,
+        source: `saved_${draft.source}`,
+        source_url: fields.product_url,
+        created_by: userId,
+      });
       if (observation.error)
         mediaWarning +=
           " The initial price is saved; its history entry could not be added.";
@@ -1251,8 +1286,12 @@ export default function Workspace() {
                     onChange={(e) => setSort(e.target.value)}
                   >
                     <option value="newest">Recently added</option>
-                    <option value="price-low">Price: low to high</option>
-                    <option value="price-high">Price: high to low</option>
+                    <option value="price-low">
+                      Price: low to high by currency
+                    </option>
+                    <option value="price-high">
+                      Price: high to low by currency
+                    </option>
                     <option value="drop">Biggest price drops</option>
                   </select>
                   <div className="view-toggle">
@@ -1852,7 +1891,19 @@ export default function Workspace() {
               (m) => m.library_id === l.id && m.role !== "viewer",
             ),
         )}
-        libraryId={activeId}
+        libraryId={
+          (
+            libraries
+              .filter(
+                (l) =>
+                  isDemo ||
+                  memberships.some(
+                    (m) => m.library_id === l.id && m.role !== "viewer",
+                  ),
+              )
+              .find((l) => l.id === activeId) ?? personal
+          )?.id ?? ""
+        }
         isDemo={isDemo}
         onSave={saveDraft}
       />

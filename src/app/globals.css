@@ -4245,3 +4245,48 @@ dialog::backdrop {
   line-height: 1.8;
   margin-top: 5px;
 }
+@media (max-width: 760px) {
+  input:not([type="checkbox"]),
+  textarea {
+    font-size: 16px !important;
+  }
+  .search-input input,
+  .query-input input {
+    font-size: 16px !important;
+  }
+  .theme-toggle {
+    min-height: 38px;
+  }
+  .save-heart:before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+  }
+  .modal-head .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .form-stack input,
+  .form-stack select,
+  .form-stack textarea {
+    min-height: 44px;
+  }
+  .form-stack input[type="checkbox"] {
+    min-height: 16px;
+  }
+  .capture-link .btn {
+    min-height: 44px;
+  }
+  .mobile-nav > button {
+    min-height: 44px;
+  }
+  .detail-tabs button {
+    min-height: 36px;
+  }
+  .query-input {
+    gap: 8px;
+  }
+  .query-input input {
+    width: 100%;
+  }
+}
