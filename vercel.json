@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "regions": ["syd1"],
+  "functions": { "src/app/api/**/route.ts": { "maxDuration": 60 } },
+  "crons": [{ "path": "/api/cron/prices", "schedule": "0 3 * * *" }]
+}
