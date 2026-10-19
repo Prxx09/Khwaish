@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CATEGORIES, type ExtractedProduct, type Library } from "@/lib/types";
 import { ErrorText, Modal, ProductImage } from "./ui";
+import { parseOcrProduct, prepareOcrImage } from "@/lib/ocr-product";
 export type Draft = {
   product_name: string;
   product_url: string;
@@ -79,6 +80,8 @@ export default function CaptureDialog({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [ready, setReady] = useState(false);
+  const [ocrText, setOcrText] = useState("");
+  const [priceCandidates, setPriceCandidates] = useState<number[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   useEffect(() => {
@@ -91,6 +94,8 @@ export default function CaptureDialog({
       setNotice("");
       setProgress(0);
       setBusy(false);
+      setOcrText("");
+      setPriceCandidates([]);
       setTab("link");
     }
     generation.current++;
@@ -164,7 +169,7 @@ export default function CaptureDialog({
     }
   }
   async function readScreenshot(selected: File | undefined) {
-    if (!selected) return;
+    if (!selected || busy) return;
     setError("");
     setNotice("");
     if (
@@ -177,54 +182,51 @@ export default function CaptureDialog({
     setFile(selected);
     setBusy(true);
     setProgress(0);
+    setOcrText("");
+    setPriceCandidates([]);
     const current = generation.current;
     let worker:
       | Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>
       | undefined;
     try {
-      const { createWorker } = await import("tesseract.js");
+      const { createWorker, PSM } = await import("tesseract.js");
       worker = await createWorker("eng", 1, {
         logger: (m) => {
           if (m.status === "recognizing text" && current === generation.current)
             setProgress(Math.round(m.progress * 100));
         },
       });
-      const { data } = await worker.recognize(selected);
+      await worker.setParameters({
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+        preserve_interword_spaces: "1",
+        user_defined_dpi: "300",
+      });
+      const prepared = await prepareOcrImage(selected).catch(() => selected);
       if (current !== generation.current) return;
-      const lines = data.text
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const name =
-        lines.find(
-          (l) =>
-            l.length > 18 &&
-            !/amazon|flipkart|myntra|add to|buy now|delivery|search|wishlist|sign in|free shipping/i.test(
-              l,
-            ),
-        ) ?? "";
-      const prices = [
-        ...data.text.matchAll(/(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)/gi),
-      ];
-      const detectedUrl = data.text.match(/https?:\/\/[^\s]+/)?.[0] ?? "";
+      const { data } = await worker.recognize(prepared);
+      if (current !== generation.current) return;
+      const extracted = parseOcrProduct(data.text);
+      const lowConfidence = data.confidence < 40;
+      setOcrText(data.text);
+      setPriceCandidates(extracted.priceCandidates);
       setDraft((d) => ({
         ...d,
-        product_name: name.slice(0, 240),
-        price: prices[0]?.[1].replace(/,/g, "") ?? "",
-        product_url: detectedUrl,
-        retailer: /amazon/i.test(data.text)
-          ? "Amazon"
-          : /flipkart/i.test(data.text)
-            ? "Flipkart"
-            : /myntra/i.test(data.text)
-              ? "Myntra"
-              : "",
+        product_name: lowConfidence ? "" : extracted.productName,
+        price: lowConfidence ? "" : extracted.price,
+        product_url: extracted.url,
+        retailer: extracted.retailer,
+        category: extracted.category,
         source: "on_device_ocr",
         confidence: data.confidence / 100,
       }));
       setReady(true);
       setNotice(
-        "Read on your device. OCR can mix up names and sale prices—review the details below. Add a store link to fetch a stock image and check future prices.",
+        lowConfidence
+          ? "The screenshot text is unclear. Crop around the product title and price, then upload again, or enter the details below."
+          : [
+              "Read on your device. Review the title and selling price before saving.",
+              ...extracted.warnings,
+            ].join(" "),
       );
     } catch {
       if (current === generation.current) {
@@ -352,6 +354,28 @@ export default function CaptureDialog({
           <Check size={16} />
           {notice}
         </p>
+      )}
+      {tab === "screenshot" && priceCandidates.length > 0 && (
+        <div className="ocr-candidates" aria-label="Detected price candidates">
+          <p>Detected amounts · choose only the product’s selling price</p>
+          {priceCandidates.map((price) => (
+            <button
+              key={price}
+              type="button"
+              className="btn secondary"
+              aria-pressed={draft.price === String(price)}
+              onClick={() => field("price", String(price))}
+            >
+              ₹{price.toLocaleString("en-IN")}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === "screenshot" && ocrText && (
+        <details className="ocr-evidence">
+          <summary>Check the text read from your screenshot</summary>
+          <pre>{ocrText}</pre>
+        </details>
       )}
       {ready && (
         <form className="capture-form" onSubmit={submit}>

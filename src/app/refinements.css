@@ -1,4 +1,36 @@
 /* Readable type, expressive navigation, and usable interaction targets. */
+.ocr-candidates {
+  margin: 14px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ocr-candidates p {
+  width: 100%;
+  font-size: 14px;
+  color: var(--muted);
+}
+.ocr-candidates button[aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+}
+.ocr-evidence {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.ocr-evidence summary {
+  cursor: pointer;
+}
+.ocr-evidence pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow: auto;
+  font: inherit;
+  color: var(--muted);
+}
 .main-nav button,
 .space-link,
 .settings-link {
