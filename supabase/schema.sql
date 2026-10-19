@@ -5,6 +5,7 @@
 create extension if not exists pgcrypto;
 
 create schema if not exists private;
+revoke all on schema private from public, anon;
 grant usage on schema private to authenticated;
 
 create table if not exists public.profiles (
@@ -191,6 +192,28 @@ drop trigger if exists on_library_created_add_owner on public.libraries;
 create trigger on_library_created_add_owner
   after insert on public.libraries
   for each row execute function private.add_library_owner_membership();
+
+create or replace function private.touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  new.updated_at = now();
+  return new;
+end;
+$;
+revoke all on function private.touch_updated_at() from public, anon, authenticated;
+
+drop trigger if exists touch_profiles_updated_at on public.profiles;
+create trigger touch_profiles_updated_at before update on public.profiles
+  for each row execute function private.touch_updated_at();
+drop trigger if exists touch_libraries_updated_at on public.libraries;
+create trigger touch_libraries_updated_at before update on public.libraries
+  for each row execute function private.touch_updated_at();
+drop trigger if exists touch_wishlist_items_updated_at on public.wishlist_items;
+create trigger touch_wishlist_items_updated_at before update on public.wishlist_items
+  for each row execute function private.touch_updated_at();
 
 alter table public.profiles enable row level security;
 alter table public.libraries enable row level security;
