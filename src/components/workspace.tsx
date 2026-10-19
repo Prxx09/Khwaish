@@ -49,7 +49,15 @@ import {
   type Member,
   type Profile,
 } from "@/lib/types";
-import { Avatar, Brand, EmptyState, ErrorText, Modal, Skeletons } from "./ui";
+import {
+  Avatar,
+  Brand,
+  EmptyState,
+  ErrorText,
+  Modal,
+  Skeletons,
+  ProductImage,
+} from "./ui";
 import AuthDialog from "./auth-dialog";
 import CaptureDialog, { type Draft } from "./capture-dialog";
 import ProductCard from "./product-card";
@@ -97,9 +105,23 @@ export default function Workspace() {
   const [layout, setLayout] = useState("grid");
   const [query, setQuery] = useState("");
   const [queryScope, setQueryScope] = useState("all");
-  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [chatTurns, setChatTurns] = useState<
+    {
+      id: string;
+      question: string;
+      result: QueryResult;
+      mode: "ai" | "local";
+    }[]
+  >([]);
+  const [pendingQuestion, setPendingQuestion] = useState("");
   const [queryBusy, setQueryBusy] = useState(false);
   const queryVersion = useRef(0);
+  useEffect(() => {
+    queryVersion.current++;
+    setChatTurns([]);
+    setPendingQuestion("");
+    setQueryBusy(false);
+  }, [queryScope, user?.id]);
   const [pendingInvite, setPendingInvite] = useState("");
   const [joining, setJoining] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -430,9 +452,9 @@ export default function Workspace() {
     setCategory("All");
     setStatus("all");
     setPriority("all");
-    setQueryResult(null);
     queryVersion.current++;
     setQueryBusy(false);
+    setPendingQuestion("");
   }, [activeId, view]);
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -790,15 +812,23 @@ export default function Workspace() {
     }
   }
   async function runQuery(text = query) {
-    if (!text.trim()) return;
+    if (!text.trim() || queryBusy) return;
     const version = ++queryVersion.current;
-    setQuery(text);
+    setQuery("");
+    setPendingQuestion(text);
+    const complete = (result: QueryResult, mode: "ai" | "local") => {
+      setChatTurns((turns) => [
+        ...turns.slice(-19),
+        { id: crypto.randomUUID(), question: text, result, mode },
+      ]);
+      setPendingQuestion("");
+    };
     const scoped =
       queryScope === "all"
         ? items
         : items.filter((item) => item.library_id === queryScope);
     if (isDemo || !statusInfo.aiWishlist) {
-      setQueryResult(queryWishlist(text, scoped, userId));
+      complete(queryWishlist(text, scoped, userId), "local");
       return;
     }
     setQueryBusy(true);
@@ -806,22 +836,33 @@ export default function Workspace() {
       const response = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, libraryId: queryScope }),
+        body: JSON.stringify({
+          query: text,
+          libraryId: queryScope,
+          history: chatTurns.slice(-4).map((turn) => ({
+            question: turn.question,
+            answer: turn.result.answer.slice(0, 3000),
+            ids: turn.result.items.slice(0, 50).map((item) => item.id),
+          })),
+        }),
         signal: AbortSignal.timeout(35000),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       if (version !== queryVersion.current) return;
-      setQueryResult({
-        ...body,
-        items: body.ids.flatMap((id: string) => {
-          const item = scoped.find((item) => item.id === id);
-          return item ? [item] : [];
-        }),
-      });
+      complete(
+        {
+          ...body,
+          items: body.ids.flatMap((id: string) => {
+            const item = scoped.find((item) => item.id === id);
+            return item ? [item] : [];
+          }),
+        },
+        "ai",
+      );
     } catch (error) {
       if (version === queryVersion.current) {
-        setQueryResult(queryWishlist(text, scoped, userId));
+        complete(queryWishlist(text, scoped, userId), "local");
         notify(
           error instanceof Error
             ? error.message
@@ -1657,146 +1698,206 @@ export default function Workspace() {
                   budgets, and spot price drops using everyday language.
                 </p>
               </section>
-              <div className="query-panel">
-                <div className="query-scope">
-                  <button
-                    type="button"
-                    className="text-btn"
-                    disabled={!queryResult && !query}
-                    onClick={() => {
-                      queryVersion.current++;
-                      setQueryBusy(false);
-                      setQuery("");
-                      setQueryResult(null);
-                      notify("Conversation cleared.");
-                    }}
-                  >
-                    Clear chat
-                  </button>
-                  <span>Look in</span>
-                  <select
-                    aria-label="Query library"
-                    value={queryScope}
-                    onChange={(e) => {
-                      setQueryScope(e.target.value);
-                      queryVersion.current++;
-                      setQueryBusy(false);
-                      setQueryResult(null);
-                    }}
-                  >
-                    <option value="all">All my libraries</option>
-                    {libraries.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="private-badge">
-                    <ShieldCheck size={12} />
-                    {statusInfo.aiWishlist && !isDemo
-                      ? "AI uses accessible wishlist details"
-                      : "Local wishlist search"}
-                  </span>
-                </div>
-                <form
-                  className="query-input"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    runQuery();
-                  }}
-                >
-                  <Sparkles size={22} />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    maxLength={500}
-                    aria-label="Ask your wishlist"
-                    placeholder="Show me electronics under ₹10,000…"
-                  />
-                  <button
-                    className="icon-btn accent"
-                    disabled={!query.trim() || queryBusy}
-                    aria-label="Ask question"
-                  >
-                    {queryBusy ? (
-                      <LoaderCircle size={21} className="spin" />
-                    ) : (
-                      <ArrowRight size={21} />
-                    )}
-                  </button>
-                </form>
-                <div className="query-prompts">
-                  {[
-                    "What got cheaper?",
-                    "Show high priority items",
-                    "What is the total cost?",
-                    "Show electronics under ₹5,000",
-                  ].map((p) => (
-                    <button onClick={() => runQuery(p)} key={p}>
-                      {p}
-                      <ArrowUpRight size={13} />
+              <div className="wishlist-conversation">
+                <div className="query-panel">
+                  <div className="query-scope">
+                    <button
+                      type="button"
+                      className="text-btn"
+                      disabled={!chatTurns.length && !query && !queryBusy}
+                      onClick={() => {
+                        queryVersion.current++;
+                        setQueryBusy(false);
+                        setQuery("");
+                        setChatTurns([]);
+                        setPendingQuestion("");
+                        notify("Conversation cleared.");
+                      }}
+                    >
+                      Clear chat
                     </button>
-                  ))}
-                </div>
-              </div>
-              {queryResult ? (
-                <section className="query-results">
-                  <div className="query-answer">
-                    <span className="answer-icon">
-                      <Sparkles size={19} />
+                    <span>Look in</span>
+                    <select
+                      aria-label="Query library"
+                      value={queryScope}
+                      onChange={(e) => {
+                        setQueryScope(e.target.value);
+                        queryVersion.current++;
+                        setQueryBusy(false);
+                      }}
+                    >
+                      <option value="all">All my libraries</option>
+                      {libraries.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="private-badge">
+                      <ShieldCheck size={12} />
+                      {statusInfo.aiWishlist && !isDemo
+                        ? "AI uses accessible wishlist details"
+                        : "Local wishlist search"}
                     </span>
+                  </div>
+                  <form
+                    className="query-input"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      runQuery();
+                    }}
+                  >
+                    <Sparkles size={22} />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      maxLength={500}
+                      aria-label="Ask your wishlist"
+                      placeholder="Show me electronics under ₹10,000…"
+                    />
+                    <button
+                      className="icon-btn accent"
+                      disabled={!query.trim() || queryBusy}
+                      aria-label="Ask question"
+                    >
+                      {queryBusy ? (
+                        <LoaderCircle size={21} className="spin" />
+                      ) : (
+                        <ArrowRight size={21} />
+                      )}
+                    </button>
+                  </form>
+                  <div className="query-prompts">
+                    {[
+                      "What got cheaper?",
+                      "Show high priority items",
+                      "What is the total cost?",
+                      "Show electronics under ₹5,000",
+                    ].map((p) => (
+                      <button
+                        disabled={queryBusy}
+                        onClick={() => runQuery(p)}
+                        key={p}
+                      >
+                        {p}
+                        <ArrowUpRight size={13} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {chatTurns.length || pendingQuestion ? (
+                  <section
+                    className="chat-transcript"
+                    aria-label="Wishlist conversation"
+                    role="log"
+                    aria-live="polite"
+                  >
+                    {chatTurns.map((turn) => (
+                      <article className="chat-turn" key={turn.id}>
+                        <div className="chat-question">
+                          <span>You</span>
+                          <p>{turn.question}</p>
+                        </div>
+                        <div className="chat-reply">
+                          <div className="chat-speaker">
+                            <Sparkles size={17} />
+                            <strong>Khwahish</strong>
+                            <small>
+                              {turn.mode === "ai" ? "Groq" : "Local search"}
+                            </small>
+                          </div>
+                          <p className="chat-answer-text">
+                            {turn.result.answer}
+                          </p>
+                          {turn.result.items.length > 0 && (
+                            <div
+                              className="chat-attachments"
+                              aria-label="Related product attachments"
+                            >
+                              {turn.result.items
+                                .slice(0, 6)
+                                .map((attachment) => (
+                                  <button
+                                    type="button"
+                                    className="chat-attachment"
+                                    key={attachment.id}
+                                    onClick={() => setSelectedId(attachment.id)}
+                                  >
+                                    <ProductImage
+                                      src={
+                                        attachment.product_media?.[0]
+                                          ?.signed_url || attachment.image_url
+                                      }
+                                      name={attachment.product_name}
+                                    />
+                                    <span>
+                                      <strong>{attachment.product_name}</strong>
+                                      <small>
+                                        {money(
+                                          currentPrice(attachment),
+                                          attachment.currency,
+                                        )}{" "}
+                                        ·{" "}
+                                        {attachment.retailer ||
+                                          attachment.category}
+                                      </small>
+                                    </span>
+                                    <ArrowUpRight size={17} />
+                                  </button>
+                                ))}
+                            </div>
+                          )}
+                          {turn.result.items.length > 6 && (
+                            <p className="chat-caption">
+                              Showing 6 of {turn.result.items.length} matching
+                              wishes.
+                            </p>
+                          )}
+                          <p className="chat-caption">
+                            Based on saved details and recorded prices.
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+                    {pendingQuestion && (
+                      <article className="chat-turn">
+                        <div className="chat-question">
+                          <span>You</span>
+                          <p>{pendingQuestion}</p>
+                        </div>
+                        <p className="chat-thinking" role="status">
+                          <LoaderCircle size={17} className="spin" />
+                          Looking through your wishlist…
+                        </p>
+                      </article>
+                    )}
+                  </section>
+                ) : (
+                  <div className="query-explainer">
                     <div>
-                      <h3>{queryResult.answer}</h3>
-                      <div className="answer-filters">
-                        {queryResult.filters.map((f) => (
-                          <span className="pill" key={f}>
-                            {f}
-                          </span>
-                        ))}
-                      </div>
+                      <Search size={21} />
+                      <strong>Find your thing</strong>
                       <p>
-                        Based on saved items and recorded prices. Use “Check
-                        price” on an item for a fresh store check.
+                        Search a product, category, store, priority, or budget.
+                      </p>
+                    </div>
+                    <div>
+                      <TrendingDown size={21} />
+                      <strong>Spot a little win</strong>
+                      <p>Find products with a recorded price drop.</p>
+                    </div>
+                    <div>
+                      <ShieldCheck size={21} />
+                      <strong>Keep it personal</strong>
+                      <p>
+                        AI search sends details from your selected accessible
+                        libraries to Groq. Guest and fallback search run
+                        locally.
                       </p>
                     </div>
                   </div>
-                  <div className="product-grid">
-                    {queryResult.items.map((i, n) => (
-                      <ProductCard
-                        key={i.id}
-                        item={i}
-                        index={n}
-                        onSelect={() => setSelectedId(i.id)}
-                        canEdit={false}
-                        onFavorite={() => {}}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : (
-                <div className="query-explainer">
-                  <div>
-                    <Search size={21} />
-                    <strong>Find your thing</strong>
-                    <p>
-                      Search a product, category, store, priority, or budget.
-                    </p>
-                  </div>
-                  <div>
-                    <TrendingDown size={21} />
-                    <strong>Spot a little win</strong>
-                    <p>Find products with a recorded price drop.</p>
-                  </div>
-                  <div>
-                    <ShieldCheck size={21} />
-                    <strong>Keep it personal</strong>
-                    <p>
-                      AI search sends details from your selected accessible
-                      libraries to Groq. Guest and fallback search run locally.
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
           {view === "settings" && (

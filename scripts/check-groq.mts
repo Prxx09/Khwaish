@@ -56,27 +56,39 @@ try {
       schema: z.object({
         ids: z.array(z.string()),
         intent: z.enum(["find", "total"]),
+        answer: z.string(),
       }),
     }),
     maxOutputTokens: 1000,
     maxRetries: 0,
     abortSignal: AbortSignal.timeout(30000),
     system:
-      "Select provided product IDs matching the question. Footwear includes shoes, sandals and sneakers. Never invent IDs.",
+      "Answer the question in friendly plain text using only saved facts, then select relevant product IDs for attachments. A rating is not a price. State when ratings are missing. Never invent IDs.",
     prompt: JSON.stringify({
-      question: "footwear",
+      question: "Which is the top rated footwear item? Explain why.",
       products: [
-        { id: "shoe", name: "Lotto Men Impulso Casual Shoes" },
-        { id: "headset", name: "Wireless Headphones" },
+        {
+          id: "shoe",
+          name: "Lotto Men Impulso Casual Shoes",
+          notes: "Rating / 5: 4.4",
+        },
+        {
+          id: "headset",
+          name: "Wireless Headphones",
+          notes: "Rating / 5: 4.8",
+        },
       ],
     }),
   });
   if (match.ids.join(",") !== "shoe")
     throw new Error("Semantic search did not select the shoe");
+  if (!match.answer.includes("4.4"))
+    throw new Error("Answer omitted the saved shoe rating");
   console.log(
     JSON.stringify({
       semanticSearch: true,
-      query: "footwear",
+      query: "top rated footwear",
+      answer: match.answer,
       selected: match.ids,
     }),
   );

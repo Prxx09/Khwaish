@@ -19,3 +19,9 @@ Chat deletion uses the existing author-only `item_comments` RLS policy, checked 
 ## Semantic wishlist search
 
 `/api/ask` fetches up to 500 accessible items through the user's Supabase session and optional library filter. Groq selects IDs using product names, categories, variants, short notes and saved price metadata. Only IDs present in those fetched records are accepted. Totals and recorded savings are computed in code, never supplied by the model. Larger collections and API failures fall back to local matching with a visible message. Search uses saved observations, not current web prices.
+
+The model also writes a concise plain-text answer to the question, with up to four recent turns supplied as context. It is instructed to explain missing ratings/specifications instead of inferring them. Totals append the deterministic calculation. Replies show up to six compact product attachments; selecting one opens the product drawer. The transcript retains up to 20 turns in memory and clears on request, scope change or account change. Model prose is rendered as text, never HTML.
+
+## Clipboard screenshots
+
+While the screenshot dialog is open, an image paste event passes the clipboard file into the existing size/type checks and OCR pipeline. The explicit paste button requests Clipboard API access on click and supports PNG/JPEG/WebP. If unavailable or denied, the UI offers keyboard paste or file selection. Clipboard images are not written to storage until the user saves the wish. Clipboard permission behavior and keyboard paste still need desktop browser verification in this workspace.

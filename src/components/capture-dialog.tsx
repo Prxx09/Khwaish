@@ -89,6 +89,7 @@ export default function CaptureDialog({
   const [priceCandidates, setPriceCandidates] = useState<number[]>([]);
   const [useAi, setUseAi] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
+  const [clipboardBusy, setClipboardBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   useEffect(() => {
@@ -117,6 +118,62 @@ export default function CaptureDialog({
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+  useEffect(() => {
+    if (!open || tab !== "screenshot") return;
+    const paste = (event: ClipboardEvent) => {
+      if (busy || aiBusy || saving) return;
+      const image = Array.from(event.clipboardData?.items ?? [])
+        .find((item) => item.kind === "file" && item.type.startsWith("image/"))
+        ?.getAsFile();
+      if (!image) return;
+      event.preventDefault();
+      void readScreenshot(image);
+    };
+    window.addEventListener("paste", paste);
+    return () => window.removeEventListener("paste", paste);
+  }, [open, tab, busy, aiBusy, saving, useAi, isDemo]);
+  async function pasteFromClipboard() {
+    if (busy || aiBusy || saving || clipboardBusy) return;
+    const version = generation.current;
+    setError("");
+    if (!navigator.clipboard?.read) {
+      setError(
+        "Press Ctrl+V (⌘V on Mac) to paste a copied screenshot, or choose an image file.",
+      );
+      return;
+    }
+    setClipboardBusy(true);
+    try {
+      const items = await navigator.clipboard.read();
+      const item = items.find((item) =>
+        item.types.some((type) =>
+          ["image/png", "image/jpeg", "image/webp"].includes(type),
+        ),
+      );
+      const type = item?.types.find((type) =>
+        ["image/png", "image/jpeg", "image/webp"].includes(type),
+      );
+      if (!item || !type) {
+        setError(
+          "No screenshot found on the clipboard. Copy an image first, then paste it here.",
+        );
+        return;
+      }
+      const blob = await item.getType(type);
+      if (version !== generation.current) return;
+      await readScreenshot(
+        new File([blob], `clipboard-${Date.now()}.${type.split("/")[1]}`, {
+          type,
+        }),
+      );
+    } catch {
+      setError(
+        "Clipboard access wasn't available. Press Ctrl+V (⌘V on Mac), or choose an image file.",
+      );
+    } finally {
+      setClipboardBusy(false);
+    }
+  }
   function field<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
   }
@@ -399,7 +456,11 @@ export default function CaptureDialog({
             className="visually-hidden"
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => readScreenshot(e.target.files?.[0])}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void readScreenshot(file);
+            }}
           />
           <button
             className="dropzone"
@@ -428,6 +489,22 @@ export default function CaptureDialog({
               </div>
             )}
           </button>
+          <div className="clipboard-actions">
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={busy || aiBusy || saving || clipboardBusy}
+              onClick={pasteFromClipboard}
+            >
+              <ImagePlus size={17} />
+              {clipboardBusy && !busy
+                ? "Reading clipboard…"
+                : "Paste image from clipboard"}
+            </button>
+            <span>
+              Or press <kbd>Ctrl</kbd> + <kbd>V</kbd> · <kbd>⌘V</kbd> on Mac
+            </span>
+          </div>
         </>
       )}
       <ErrorText>{error}</ErrorText>
