@@ -145,6 +145,7 @@ export default function ItemDetail({
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offerMessage, setOfferMessage] = useState("");
@@ -196,6 +197,11 @@ export default function ItemDetail({
         },
         load,
       )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "item_comments" },
+        load,
+      )
       .subscribe();
     return () => {
       cancelled = true;
@@ -221,6 +227,33 @@ export default function ItemDetail({
       setError(e instanceof Error ? e.message : "Could not save.");
     } finally {
       setBusy(false);
+    }
+  }
+  async function removeMessages() {
+    if (!deleteMessage || commentBusy || isDemo) return;
+    setCommentBusy(true);
+    setError("");
+    try {
+      let request = createClient()
+        .from("item_comments")
+        .delete()
+        .eq("wishlist_item_id", item.id)
+        .eq("user_id", userId);
+      if (deleteMessage !== "all") request = request.eq("id", deleteMessage);
+      const { data, error } = await request.select("id");
+      if (error) throw error;
+      const removed = new Set((data ?? []).map((row) => row.id));
+      setComments((rows) => rows.filter((row) => !removed.has(row.id)));
+      setDeleteMessage(null);
+      notify(
+        removed.size ? "Your messages were deleted." : "No messages to delete.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Could not delete messages.",
+      );
+    } finally {
+      setCommentBusy(false);
     }
   }
   async function refresh() {
@@ -695,8 +728,44 @@ export default function ItemDetail({
               <MessageCircle size={18} />
               Talk about this wish
             </h3>
+            {comments.some((message) => message.user_id === userId) && (
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setDeleteMessage("all")}
+              >
+                <Trash2 size={15} />
+                Clear my messages
+              </button>
+            )}
           </div>
           <p className="muted">A little context for you and your people.</p>
+          {deleteMessage && (
+            <div className="notice" role="alert">
+              <p>
+                {deleteMessage === "all"
+                  ? "Delete all your messages in this product conversation?"
+                  : "Delete this message?"}{" "}
+                This cannot be undone.
+              </p>
+              <button
+                type="button"
+                className="btn danger"
+                disabled={commentBusy}
+                onClick={removeMessages}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className="btn secondary"
+                disabled={commentBusy}
+                onClick={() => setDeleteMessage(null)}
+              >
+                Keep
+              </button>
+            </div>
+          )}
           {commentsLoading ? (
             <p>Loading conversation…</p>
           ) : comments.length === 0 ? (
@@ -716,6 +785,17 @@ export default function ItemDetail({
                     {new Date(c.created_at).toLocaleDateString("en-IN")}
                   </small>
                   <p>{c.body}</p>
+                  {c.user_id === userId && (
+                    <button
+                      className="text-btn"
+                      type="button"
+                      aria-label="Delete this message"
+                      onClick={() => setDeleteMessage(c.id)}
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))

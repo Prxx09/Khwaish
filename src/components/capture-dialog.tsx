@@ -14,6 +14,10 @@ import {
 import { CATEGORIES, type ExtractedProduct, type Library } from "@/lib/types";
 import { ErrorText, Modal, ProductImage } from "./ui";
 import { parseOcrProduct, prepareOcrImage } from "@/lib/ocr-product";
+import {
+  structureNotes,
+  type StructuredProduct,
+} from "@/lib/product-structure";
 export type Draft = {
   product_name: string;
   product_url: string;
@@ -33,6 +37,7 @@ export type Draft = {
   source: string;
   confidence: number;
   availability: string;
+  raw_ocr_text?: string;
 };
 const initial = (libraryId: string): Draft => ({
   product_name: "",
@@ -82,6 +87,8 @@ export default function CaptureDialog({
   const [ready, setReady] = useState(false);
   const [ocrText, setOcrText] = useState("");
   const [priceCandidates, setPriceCandidates] = useState<number[]>([]);
+  const [useAi, setUseAi] = useState(true);
+  const [aiBusy, setAiBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   useEffect(() => {
@@ -96,6 +103,7 @@ export default function CaptureDialog({
       setBusy(false);
       setOcrText("");
       setPriceCandidates([]);
+      setAiBusy(false);
       setTab("link");
     }
     generation.current++;
@@ -111,6 +119,55 @@ export default function CaptureDialog({
   }, [file]);
   function field<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
+  }
+  async function structureText(text: string, version = generation.current) {
+    setAiBusy(true);
+    try {
+      const response = await fetch("/api/structure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw new Error(body.error || "AI structuring unavailable.");
+      if (version !== generation.current) return;
+      const product = body.product as StructuredProduct;
+      const extraNotes = structureNotes(product);
+      setDraft((draft) => ({
+        ...draft,
+        product_name: product.product_name ?? "",
+        price: product.price == null ? "" : String(product.price),
+        brand: product.brand ?? "",
+        retailer: product.retailer ?? "",
+        category: product.category,
+        product_code: product.product_code ?? "",
+        product_url: product.product_url ?? draft.product_url,
+        variant: [product.model, product.color, product.size, product.capacity]
+          .filter(Boolean)
+          .join(" · ")
+          .slice(0, 200),
+        currency: product.currency ?? draft.currency,
+        availability: product.availability,
+        notes: extraNotes,
+        source: "on_device_ocr_gemini",
+        raw_ocr_text: text,
+      }));
+      setNotice(
+        [
+          "Gemini structured the OCR text. Review all fields; extra details are in Notes.",
+          ...product.warnings,
+        ].join(" "),
+      );
+    } catch (error) {
+      if (version === generation.current)
+        setNotice(
+          `${error instanceof Error ? error.message : "AI structuring failed."} Local OCR results are still available for review.`,
+        );
+    } finally {
+      if (version === generation.current) setAiBusy(false);
+    }
   }
   async function extractLink() {
     setError("");
@@ -169,7 +226,7 @@ export default function CaptureDialog({
     }
   }
   async function readScreenshot(selected: File | undefined) {
-    if (!selected || busy) return;
+    if (!selected || busy || aiBusy) return;
     setError("");
     setNotice("");
     if (
@@ -184,7 +241,7 @@ export default function CaptureDialog({
     setProgress(0);
     setOcrText("");
     setPriceCandidates([]);
-    const current = generation.current;
+    const current = ++generation.current;
     let worker:
       | Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>
       | undefined;
@@ -218,6 +275,7 @@ export default function CaptureDialog({
         category: extracted.category,
         source: "on_device_ocr",
         confidence: data.confidence / 100,
+        raw_ocr_text: data.text,
       }));
       setReady(true);
       setNotice(
@@ -228,6 +286,8 @@ export default function CaptureDialog({
               ...extracted.warnings,
             ].join(" "),
       );
+      if (useAi && !isDemo && data.text.trim().length >= 8)
+        await structureText(data.text, current);
     } catch {
       if (current === generation.current) {
         setReady(true);
@@ -242,6 +302,7 @@ export default function CaptureDialog({
   }
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (busy || aiBusy || saving) return;
     setSaving(true);
     setError("");
     try {
@@ -272,6 +333,7 @@ export default function CaptureDialog({
         ).map(({ id, label, Icon }) => (
           <button
             key={id}
+            disabled={busy || aiBusy || saving}
             className={tab === id ? "active" : ""}
             onClick={() => {
               setTab(id);
@@ -314,6 +376,24 @@ export default function CaptureDialog({
       )}
       {tab === "screenshot" && (
         <>
+          <label className="ai-consent">
+            <input
+              type="checkbox"
+              checked={useAi && !isDemo}
+              disabled={busy || aiBusy || isDemo}
+              onChange={(event) => setUseAi(event.target.checked)}
+            />
+            <span>
+              Structure all recognized text with Gemini
+              <p>
+                The image is read on your device. Recognized text is sent to
+                Google to fill product fields.{" "}
+                {isDemo
+                  ? "Sign in to enable AI."
+                  : "Turn off for local-only extraction."}
+              </p>
+            </span>
+          </label>
           <input
             ref={input}
             className="visually-hidden"
@@ -323,7 +403,7 @@ export default function CaptureDialog({
           />
           <button
             className="dropzone"
-            disabled={busy}
+            disabled={busy || aiBusy}
             onClick={() => input.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -335,11 +415,13 @@ export default function CaptureDialog({
               {busy ? <LoaderCircle className="spin" /> : <Upload />}
             </span>
             <strong>
-              {busy
-                ? `Reading on your device… ${progress}%`
-                : "Drop a screenshot, or tap to choose"}
+              {aiBusy
+                ? "Structuring product details with Gemini…"
+                : busy
+                  ? `Reading on your device… ${progress}%`
+                  : "Drop a screenshot, or tap to choose"}
             </strong>
-            <span>JPG, PNG, WebP · up to 10 MB · OCR stays on your device</span>
+            <span>JPG, PNG, WebP · up to 10 MB · local OCR first</span>
             {busy && (
               <div className="progress">
                 <span style={{ width: `${progress}%` }} />
@@ -349,6 +431,17 @@ export default function CaptureDialog({
         </>
       )}
       <ErrorText>{error}</ErrorText>
+      {tab === "screenshot" && ocrText && !isDemo && !busy && (
+        <button
+          type="button"
+          className="btn secondary"
+          disabled={aiBusy || saving}
+          onClick={() => structureText(ocrText)}
+        >
+          <Sparkles size={16} />
+          {aiBusy ? "Structuring…" : "Structure OCR text with Gemini"}
+        </button>
+      )}
       {notice && (
         <p className="notice" role="status">
           <Check size={16} />
@@ -385,12 +478,12 @@ export default function CaptureDialog({
               name={draft.product_name || "Product preview"}
             />
             <span className="pill">
-              {draft.source === "on_device_ocr" ? (
+              {draft.source.startsWith("on_device_ocr") ? (
                 <ScanText size={12} />
               ) : (
                 <ImagePlus size={12} />
               )}{" "}
-              {draft.source === "on_device_ocr"
+              {draft.source.startsWith("on_device_ocr")
                 ? "Screenshot attached"
                 : "Product preview"}
             </span>
@@ -549,7 +642,10 @@ export default function CaptureDialog({
                 </label>
               </div>
             </details>
-            <button className="btn primary full" disabled={saving || busy}>
+            <button
+              className="btn primary full"
+              disabled={saving || busy || aiBusy}
+            >
               {saving ? (
                 <LoaderCircle className="spin" size={17} />
               ) : (
