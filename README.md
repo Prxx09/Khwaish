@@ -8,10 +8,10 @@ A personal and shared wishlist for your next favourite thing. Responsive Next.js
 - Private personal shelf, multiple shared spaces, owner/editor/viewer roles.
 - Single-use, seven-day invite links, revocation, member role changes and removal.
 - Product link previews from public Schema.org/Open Graph metadata; editable review before saving.
-- Browser-side full screenshot OCR with Tesseract.js, preprocessing and manual fallback. Optional Gemini structuring sends recognized text to Google after local OCR; the toggle explains this before upload. The screenshot and original OCR text are stored privately only when saving to an authenticated account. Unsupported fields stay unknown, and selling price/title evidence is checked against the recognized text.
+- Browser-side full screenshot OCR with Tesseract.js, preprocessing and manual fallback. Optional Groq structuring sends recognized text to Groq after local OCR; the toggle explains this before upload. The screenshot and original OCR text are stored privately only when saving to an authenticated account. Unsupported fields stay unknown, and selling price/title evidence is checked against the recognized text.
 - Manual capture, categories, priority, status, notes, size/color/variant, product code, target price and target date.
 - Initial saved price preserved separately from timestamped price observations; on-demand store checks, history chart and price-drop totals.
-- Bounded English natural-language wishlist queries (budget/category/store/priority/status/name, totals and recorded drops). Queries run locally on the user's authorized items, without sending wishlist content to a model.
+- Groq semantic wishlist search sends the selected library's accessible product details (up to 500 items) for matching. IDs are checked against RLS-filtered records and INR totals are calculated in application code. Guest mode and provider errors use local filtering; a notice identifies a fallback.
 - Shared item conversations, database-backed access checks and realtime item/comment updates.
 - CSV export, grid/list views, responsive mobile navigation, keyboard-accessible native dialogs and reduced-motion support.
 - Empty browser-only guest shelves; signing in opens a separate private account. Desktop navigation uses a top workspace bar; mobile retains its drawer and bottom navigation.

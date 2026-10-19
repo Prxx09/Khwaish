@@ -235,6 +235,15 @@ export function queryWishlist(
     const aliases: Record<string, string[]> = {
       headphones: ["headphones", "headset", "earphones", "earbuds"],
       shoes: ["shoes", "shoe", "sneaker", "sneakers"],
+      footwear: [
+        "shoes",
+        "shoe",
+        "sneaker",
+        "sneakers",
+        "sandals",
+        "boots",
+        "slippers",
+      ],
       sneakers: ["sneaker", "sneakers", "shoes"],
       book: ["book", "novel", "paperback"],
       speakers: ["speaker", "speakers"],

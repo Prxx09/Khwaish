@@ -151,12 +151,12 @@ export default function CaptureDialog({
         currency: product.currency ?? draft.currency,
         availability: product.availability,
         notes: extraNotes,
-        source: "on_device_ocr_gemini",
+        source: "on_device_ocr_groq",
         raw_ocr_text: text,
       }));
       setNotice(
         [
-          "Gemini structured the OCR text. Review all fields; extra details are in Notes.",
+          "Groq structured the OCR text. Review all fields; extra details are in Notes.",
           ...product.warnings,
         ].join(" "),
       );
@@ -384,10 +384,10 @@ export default function CaptureDialog({
               onChange={(event) => setUseAi(event.target.checked)}
             />
             <span>
-              Structure all recognized text with Gemini
+              Structure all recognized text with Groq
               <p>
                 The image is read on your device. Recognized text is sent to
-                Google to fill product fields.{" "}
+                Groq to fill product fields.{" "}
                 {isDemo
                   ? "Sign in to enable AI."
                   : "Turn off for local-only extraction."}
@@ -416,7 +416,7 @@ export default function CaptureDialog({
             </span>
             <strong>
               {aiBusy
-                ? "Structuring product details with Gemini…"
+                ? "Structuring product details with Groq…"
                 : busy
                   ? `Reading on your device… ${progress}%`
                   : "Drop a screenshot, or tap to choose"}
@@ -439,7 +439,7 @@ export default function CaptureDialog({
           onClick={() => structureText(ocrText)}
         >
           <Sparkles size={16} />
-          {aiBusy ? "Structuring…" : "Structure OCR text with Gemini"}
+          {aiBusy ? "Structuring…" : "Structure OCR text with Groq"}
         </button>
       )}
       {notice && (

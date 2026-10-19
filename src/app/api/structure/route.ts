@@ -1,12 +1,12 @@
 import { generateText, Output } from "ai";
-import { createGoogle } from "@ai-sdk/google";
+import { createGroq } from "@ai-sdk/groq";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authorized } from "@/lib/api";
 import { structureSchema, validateStructure } from "@/lib/product-structure";
 
 export async function POST(request: NextRequest) {
-  if (!process.env.GEMINI_API_KEY)
+  if (!process.env.GROQ_API_KEY)
     return NextResponse.json(
       {
         error: "AI structuring is not configured. You can still use local OCR.",
@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   try {
-    const google = createGoogle({ apiKey: process.env.GEMINI_API_KEY });
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
     const { output } = await generateText({
-      model: google(process.env.GEMINI_MODEL || "gemini-3.8-flash"),
+      model: groq(process.env.GROQ_MODEL || "openai/gpt-oss-20b"),
       output: Output.object({ schema: structureSchema }),
       maxRetries: 0,
       maxOutputTokens: 5000,
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         product: validateStructure(output, body.data.text),
-        source: "on_device_ocr_gemini",
+        source: "on_device_ocr_groq",
       },
       { headers: { "Cache-Control": "no-store" } },
     );
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Gemini could not structure this screenshot. Local OCR is available; check your model, key, quota and billing settings.",
+          "Groq could not structure this screenshot. Local OCR is available; check your model, key and quota settings.",
       },
       { status: 502 },
     );

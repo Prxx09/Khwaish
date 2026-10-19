@@ -98,6 +98,8 @@ export default function Workspace() {
   const [query, setQuery] = useState("");
   const [queryScope, setQueryScope] = useState("all");
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [queryBusy, setQueryBusy] = useState(false);
+  const queryVersion = useRef(0);
   const [pendingInvite, setPendingInvite] = useState("");
   const [joining, setJoining] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -106,6 +108,7 @@ export default function Workspace() {
   const [statusInfo, setStatusInfo] = useState({
     comparison: false,
     scheduled: false,
+    aiWishlist: false,
   });
   const [confirmLibraryDelete, setConfirmLibraryDelete] =
     useState<Library | null>(null);
@@ -428,6 +431,8 @@ export default function Workspace() {
     setStatus("all");
     setPriority("all");
     setQueryResult(null);
+    queryVersion.current++;
+    setQueryBusy(false);
   }, [activeId, view]);
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -784,17 +789,48 @@ export default function Workspace() {
       setSettingsBusy(false);
     }
   }
-  function runQuery(text = query) {
+  async function runQuery(text = query) {
+    if (!text.trim()) return;
+    const version = ++queryVersion.current;
     setQuery(text);
-    setQueryResult(
-      queryWishlist(
-        text,
-        queryScope === "all"
-          ? items
-          : items.filter((i) => i.library_id === queryScope),
-        userId,
-      ),
-    );
+    const scoped =
+      queryScope === "all"
+        ? items
+        : items.filter((item) => item.library_id === queryScope);
+    if (isDemo || !statusInfo.aiWishlist) {
+      setQueryResult(queryWishlist(text, scoped, userId));
+      return;
+    }
+    setQueryBusy(true);
+    try {
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: text, libraryId: queryScope }),
+        signal: AbortSignal.timeout(35000),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      if (version !== queryVersion.current) return;
+      setQueryResult({
+        ...body,
+        items: body.ids.flatMap((id: string) => {
+          const item = scoped.find((item) => item.id === id);
+          return item ? [item] : [];
+        }),
+      });
+    } catch (error) {
+      if (version === queryVersion.current) {
+        setQueryResult(queryWishlist(text, scoped, userId));
+        notify(
+          error instanceof Error
+            ? error.message
+            : "AI search unavailable. Showing local matches.",
+        );
+      }
+    } finally {
+      if (version === queryVersion.current) setQueryBusy(false);
+    }
   }
   function exportCsv() {
     const safe = (v: unknown) => {
@@ -1628,6 +1664,8 @@ export default function Workspace() {
                     className="text-btn"
                     disabled={!queryResult && !query}
                     onClick={() => {
+                      queryVersion.current++;
+                      setQueryBusy(false);
                       setQuery("");
                       setQueryResult(null);
                       notify("Conversation cleared.");
@@ -1641,6 +1679,8 @@ export default function Workspace() {
                     value={queryScope}
                     onChange={(e) => {
                       setQueryScope(e.target.value);
+                      queryVersion.current++;
+                      setQueryBusy(false);
                       setQueryResult(null);
                     }}
                   >
@@ -1653,7 +1693,9 @@ export default function Workspace() {
                   </select>
                   <span className="private-badge">
                     <ShieldCheck size={12} />
-                    Your data stays in your shelf
+                    {statusInfo.aiWishlist && !isDemo
+                      ? "AI uses accessible wishlist details"
+                      : "Local wishlist search"}
                   </span>
                 </div>
                 <form
@@ -1673,10 +1715,14 @@ export default function Workspace() {
                   />
                   <button
                     className="icon-btn accent"
-                    disabled={!query.trim()}
+                    disabled={!query.trim() || queryBusy}
                     aria-label="Ask question"
                   >
-                    <ArrowRight size={21} />
+                    {queryBusy ? (
+                      <LoaderCircle size={21} className="spin" />
+                    ) : (
+                      <ArrowRight size={21} />
+                    )}
                   </button>
                 </form>
                 <div className="query-prompts">
@@ -1745,8 +1791,8 @@ export default function Workspace() {
                     <ShieldCheck size={21} />
                     <strong>Keep it personal</strong>
                     <p>
-                      Private, bounded search. No wishlist content is sent to an
-                      AI provider.
+                      AI search sends details from your selected accessible
+                      libraries to Groq. Guest and fallback search run locally.
                     </p>
                   </div>
                 </div>
@@ -1884,7 +1930,8 @@ export default function Workspace() {
                     </li>
                     <li>
                       <Check size={16} />
-                      Natural-language search stays within your account.
+                      AI search uses only libraries you can access; selected
+                      product details are sent to Groq.
                     </li>
                   </ul>
                   <button className="btn secondary" onClick={exportCsv}>
