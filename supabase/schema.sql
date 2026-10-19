@@ -91,7 +91,7 @@ create table if not exists public.product_media (
 
 create index if not exists product_media_library_idx on public.product_media (library_id, created_at desc);
 
--- SECURITY DEFINER helpers are kept in the exposed schema only because RLS policies call them.
+-- SECURITY DEFINER helpers live in a non-exposed schema and are called by RLS policies.
 -- They use a fixed empty search_path and fully-qualified relation names.
 create or replace function private.has_library_access(target_library_id text)
 returns boolean
@@ -132,7 +132,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select exists (
     select 1
     from public.library_members as lm
@@ -140,7 +140,7 @@ as $
       and lm.user_id = (select auth.uid())
       and lm.role = 'owner'
   );
-$;
+$$;
 revoke all on function private.is_library_owner_text(text) from public, anon;
 grant execute on function private.has_library_access(text) to authenticated;
 grant execute on function private.is_library_owner(uuid) to authenticated;
@@ -218,7 +218,7 @@ drop policy if exists libraries_update_owner on public.libraries;
 create policy libraries_update_owner on public.libraries
   for update to authenticated
   using (private.is_library_owner(id))
-  with check (private.is_library_owner(id));
+  with check (private.is_library_owner(id) and owner_id = (select auth.uid()));
 drop policy if exists libraries_delete_owner on public.libraries;
 create policy libraries_delete_owner on public.libraries
   for delete to authenticated using (private.is_library_owner(id));
