@@ -8,7 +8,10 @@
   }
   body {
     margin: 0;
-    background: var(--bg);
+    background:
+      radial-gradient(ellipse at 80% 0%, var(--ambient), transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-sans), sans-serif;
     font-size: var(--type-body);
@@ -51,6 +54,7 @@
       background var(--motion-fast) var(--ease),
       border-color var(--motion-fast) var(--ease),
       box-shadow var(--motion-fast) var(--ease);
+    transition-behavior: normal;
   }
   :focus-visible {
     outline: 3px solid var(--accent-ink);

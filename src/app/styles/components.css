@@ -18,11 +18,16 @@
     padding: 10px 16px;
     border: 1px solid transparent;
     line-height: 1.4;
+    transition:
+      transform var(--motion-normal) var(--ease),
+      box-shadow var(--motion-normal) var(--ease),
+      background var(--motion-normal) var(--ease);
   }
   .btn.primary,
   .icon-btn.accent {
     background: var(--accent);
     color: var(--accent-text);
+    box-shadow: 0 4px 16px var(--ambient);
   }
   .btn.secondary {
     background: var(--panel);
@@ -38,6 +43,10 @@
   .card-open:hover {
     box-shadow: var(--elevation-1);
     filter: brightness(1.05);
+    transform: translateY(-2px);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0);
   }
   .btn.full {
     width: 100%;
@@ -210,12 +219,15 @@
     background: var(--panel-2);
   }
   dialog {
-    border: 1px solid var(--line);
+    border: 1px solid var(--edge);
     padding: 0;
     color: var(--text);
     background: var(--panel);
     box-shadow: var(--elevation-3);
     max-width: calc(100vw - 32px);
+  }
+  dialog[open] {
+    animation: enter var(--motion-slow) var(--ease) both;
   }
   dialog::backdrop {
     background: var(--scrim);

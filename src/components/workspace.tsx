@@ -61,6 +61,7 @@ import ProductCard from "./product-card";
 import PriceWatch from "./price-watch";
 import ItemDetail from "./item-detail";
 import SharingDialog from "./sharing-dialog";
+import { WishOrbit } from "./wish-orbit";
 
 type View = "shelf" | "shared" | "watch" | "ask" | "settings";
 const configured = Boolean(
@@ -1143,7 +1144,11 @@ export default function Workspace() {
                       </>
                     )}
                   </h1>
+                  <p className="shelf-caption">
+                    Good taste. Great timing. All yours.
+                  </p>
                 </div>
+                <WishOrbit />
                 <div className="section-actions">
                   {activeLibrary?.kind === "shared" && view === "shelf" && (
                     <button
@@ -1167,51 +1172,53 @@ export default function Workspace() {
                   </button>
                 </div>
               </section>
-              {view === "shelf" && (
-                <div className="space-switcher">
-                  <label htmlFor="shelf-scope">Browsing</label>
-                  <select
-                    id="shelf-scope"
-                    value={activeId}
-                    onChange={(e) => go("shelf", e.target.value)}
-                  >
-                    {libraries.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.kind === "personal" ? "My shelf" : l.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    className="text-btn"
-                    onClick={() => {
-                      setShareLibrary(undefined);
-                      setShareOpen(true);
-                    }}
-                    aria-label="Create a shared space"
-                  >
-                    <Plus size={18} />
-                    <span>Create space</span>
-                  </button>
-                </div>
-              )}
-              <div
-                className="stats-strip"
-                aria-label="Current shelf or space overview"
-              >
-                <span>
-                  <strong>{scopeItems.length}</strong> wishes
-                </span>
-                <span className={value === 0 ? "stat-zero" : ""}>
-                  <strong>{money(value)}</strong>{" "}
-                  {activeLibrary?.kind === "shared"
-                    ? "space value · INR"
-                    : "shelf value · INR"}
-                </span>
-                {savings > 0 && (
-                  <span className="green-text">
-                    <strong>{money(savings)}</strong> in recorded drops
-                  </span>
+              <div className="shelf-context">
+                {view === "shelf" && (
+                  <div className="space-switcher">
+                    <label htmlFor="shelf-scope">Browsing</label>
+                    <select
+                      id="shelf-scope"
+                      value={activeId}
+                      onChange={(e) => go("shelf", e.target.value)}
+                    >
+                      {libraries.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.kind === "personal" ? "My shelf" : l.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="text-btn"
+                      onClick={() => {
+                        setShareLibrary(undefined);
+                        setShareOpen(true);
+                      }}
+                      aria-label="Create a shared space"
+                    >
+                      <Plus size={18} />
+                      <span>Create space</span>
+                    </button>
+                  </div>
                 )}
+                <div
+                  className="stats-strip"
+                  aria-label="Current shelf or space overview"
+                >
+                  <span>
+                    <strong>{scopeItems.length}</strong> wishes
+                  </span>
+                  <span className={value === 0 ? "stat-zero" : ""}>
+                    <strong>{money(value)}</strong>{" "}
+                    {activeLibrary?.kind === "shared"
+                      ? "space value · INR"
+                      : "shelf value · INR"}
+                  </span>
+                  {savings > 0 && (
+                    <span className="green-text">
+                      <strong>{money(savings)}</strong> in recorded drops
+                    </span>
+                  )}
+                </div>
               </div>
               <section className="shelf-section" aria-label="Wishes">
                 <div className="shelf-toolbar">
@@ -1707,7 +1714,7 @@ export default function Workspace() {
                   </section>
                 ) : (
                   <div className="chat-welcome">
-                    <Sparkles size={32} aria-hidden="true" />
+                    <WishOrbit compact />
                     <h2>
                       {chatScopeItems.length
                         ? "What’s on your mind?"

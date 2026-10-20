@@ -1,13 +1,23 @@
 :root {
   color-scheme: dark;
-  --bg: #141810;
-  --panel: #1e2419;
-  --panel-2: #293121;
-  --panel-hover: #333d29;
+  --bg: #0c1211;
+  --panel: #141e1b;
+  --panel-2: #1d2b25;
+  --panel-hover: #28392f;
   --text: #f6f7ef;
   --muted: #bac2af;
   --subtle: #bac2af;
-  --line: #808b76;
+  --line: #839385;
+  --edge: #2c3b34;
+  --ambient: #1c41322e;
+  --glass: #0c1211ed;
+  --sculpture-dark: #10221a;
+  --sculpture-light: #edffc0;
+  --sculpture-mid: #9ec765;
+  --image-a: #e7eddf;
+  --image-b: #e6e6f0;
+  --image-c: #efebdf;
+  --image-d: #dfece8;
   --accent: #d7fa78;
   --accent-text: #1b260d;
   --accent-soft: #303e1c;
@@ -34,7 +44,7 @@
   --input: var(--panel);
   --card-image: var(--image-bg);
   --type-display: clamp(2.5rem, 4vw, 3.5rem);
-  --type-h1: clamp(2rem, 3vw, 2.75rem);
+  --type-h1: clamp(2rem, 3.6vw, 3.5rem);
   --type-h2: 1.75rem;
   --type-h3: 1.25rem;
   --type-body: 1rem;
@@ -80,6 +90,9 @@
   --muted: #515e44;
   --subtle: #515e44;
   --line: #76836a;
+  --edge: #d4dcce;
+  --ambient: #c5dca34d;
+  --glass: #f6f7efed;
   --accent: #d7fa78;
   --accent-text: #1b260d;
   --accent-soft: #e6efce;

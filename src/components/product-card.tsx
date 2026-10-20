@@ -34,6 +34,9 @@ export default function ProductCard({
             src={item.product_media?.[0]?.signed_url || item.image_url}
             name={item.product_name}
           />
+          <span className="image-explore" aria-hidden="true">
+            Take a closer look <ArrowUpRight size={16} />
+          </span>
         </button>
         {drop > 0 && (
           <span className="drop-pill">
