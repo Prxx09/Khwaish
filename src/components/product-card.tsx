@@ -23,7 +23,6 @@ export default function ProductCard({
       onClick={(event) => {
         if (!(event.target as HTMLElement).closest("button, a")) onSelect();
       }}
-      style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
     >
       <div className={`product-image-wrap tone-${index % 4}`}>
         <button

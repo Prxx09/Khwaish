@@ -528,6 +528,7 @@ export default function ItemDetail({
               <label>
                 Status
                 <select
+                  aria-label="Status"
                   value={status}
                   disabled={!canEdit}
                   onChange={(e) => setStatus(e.target.value as Item["status"])}
@@ -542,6 +543,7 @@ export default function ItemDetail({
               <label>
                 Priority
                 <select
+                  aria-label="Priority"
                   value={priority}
                   disabled={!canEdit}
                   onChange={(e) =>
@@ -652,7 +654,7 @@ export default function ItemDetail({
                 ? "Screenshot OCR"
                 : item.extraction_source?.replaceAll("_", " ") ||
                   "Manually added"}
-              . Members of this space can see these details.
+              . Only people with access can see these details.
             </p>
             {canEdit && (
               <div className="danger-zone">

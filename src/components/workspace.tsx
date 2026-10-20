@@ -8,20 +8,14 @@ import {
   ArrowUpRight,
   Bell,
   Check,
-  ChevronDown,
-  ChevronRight,
-  CircleHelp,
   Download,
   FolderHeart,
   Grid2X2,
-  Heart,
   LayoutGrid,
-  Link2,
   List,
   LoaderCircle,
   LogIn,
   LogOut,
-  Menu,
   Moon,
   MoreHorizontal,
   Plus,
@@ -41,7 +35,6 @@ import { queryWishlist, type QueryResult } from "@/lib/query";
 import {
   CATEGORIES,
   currentPrice,
-  latestPrice,
   money,
   priceDrop,
   safeUrl,
@@ -56,13 +49,11 @@ import {
   Brand,
   EmptyState,
   ErrorText,
-  Modal,
   Skeletons,
   ProductImage,
   Toast,
   ConfirmDialog,
   type ToastKind,
-  presentMessage,
 } from "./ui";
 import AuthDialog from "./auth-dialog";
 import CaptureDialog, { type Draft } from "./capture-dialog";
@@ -97,7 +88,6 @@ export default function Workspace() {
   const [loadError, setLoadError] = useState("");
   const loadVersion = useRef(0);
   const [theme, setTheme] = useState("dark");
-  const [sidebar, setSidebar] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -219,30 +209,6 @@ export default function Workspace() {
       notify("Sign in to create a shared space with your people.");
     }
   }, [shareOpen, isDemo, notify]);
-  useEffect(() => {
-    if (
-      !window.IntersectionObserver ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    )
-      return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("reveal-enter");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08 },
-    );
-    document
-      .querySelectorAll(
-        ".stats-grid, .shelf-section, .settings-card, .shared-card",
-      )
-      .forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, [view, loading]);
 
   const loadAccount = useCallback(async (id: string, background = false) => {
     const version = ++loadVersion.current;
@@ -504,6 +470,7 @@ export default function Workspace() {
   }, [user?.id]);
   useEffect(() => {
     setSearch("");
+    window.scrollTo({ top: 0, behavior: "auto" });
     setCategory("All");
     setStatus("all");
     setPriority("all");
@@ -521,7 +488,6 @@ export default function Workspace() {
   }
   function go(next: View, libraryId?: string) {
     setView(next);
-    setSidebar(false);
     if (libraryId) setActiveId(libraryId);
     else if (next === "shelf" && personal) setActiveId(personal.id);
   }
@@ -561,7 +527,8 @@ export default function Workspace() {
     return result;
   }, [scopeItems, category, status, priority, search, sort]);
   const watchDrops = items.filter(
-    (i) => priceDrop(i) > 0 && i.status !== "purchased",
+    (i) =>
+      priceDrop(i) > 0 && i.status !== "purchased" && i.status !== "not_now",
   );
   const value = scopeItems
     .filter((i) => i.currency.trim() === "INR")
@@ -1116,18 +1083,6 @@ export default function Workspace() {
           id="main-content"
           className={`main-content${view === "ask" ? " chat-main" : ""}`}
         >
-          {isDemo && authReady && (
-            <div className="demo-banner">
-              <span>
-                <span className="live-dot" />
-                Guest shelf · saved on this device. Sign in for private cloud
-                storage and sharing.
-              </span>
-              <button onClick={() => setAuthOpen(true)}>
-                Create your own shelf <ArrowRight size={14} />
-              </button>
-            </div>
-          )}
           {pendingInvite && (
             <div className="invite-banner">
               <Users size={22} />
@@ -1188,10 +1143,6 @@ export default function Workspace() {
                       </>
                     )}
                   </h1>
-                  <p>
-                    Save what catches your eye. Come back when the time feels
-                    right.
-                  </p>
                 </div>
                 <div className="section-actions">
                   {activeLibrary?.kind === "shared" && view === "shelf" && (
@@ -1250,7 +1201,7 @@ export default function Workspace() {
                 <span>
                   <strong>{scopeItems.length}</strong> wishes
                 </span>
-                <span>
+                <span className={value === 0 ? "stat-zero" : ""}>
                   <strong>{money(value)}</strong>{" "}
                   {activeLibrary?.kind === "shared"
                     ? "space value · INR"
@@ -1394,6 +1345,15 @@ export default function Workspace() {
                     ))}
                   </div>
                 </div>
+                {!scopeItems.length && authReady && !loading && !loadError && (
+                  <aside className="empty-shelf-banner">
+                    <Sparkles size={28} />
+                    <p>
+                      Good things <em>ahead.</em>
+                    </p>
+                    <span>One wish at a time.</span>
+                  </aside>
+                )}
                 {loading || !authReady ? (
                   <Skeletons />
                 ) : loadError ? (
@@ -1539,8 +1499,9 @@ export default function Workspace() {
                             <FolderHeart size={26} />
                           </span>
                           <span className="pill">
-                            {lib.owner_id === userId ? "Owner" : "Joined"} ·{" "}
-                            {role || "Member"}
+                            {lib.owner_id === userId
+                              ? "Owner"
+                              : `Joined · ${role || "Member"}`}
                           </span>
                           {lib.owner_id === userId && (
                             <details className="space-overflow">
@@ -1679,7 +1640,7 @@ export default function Workspace() {
                             </small>
                           </div>
                           <p className="chat-answer-text">
-                            {presentMessage(turn.result.answer)}
+                            {turn.result.answer}
                           </p>
                           {turn.result.items.length > 0 && (
                             <div
@@ -1814,199 +1775,214 @@ export default function Workspace() {
           {view === "settings" && (
             <>
               <section className="page-heading">
-                <span className="eyebrow">MAKE YOURSELF AT HOME</span>
-                <h1>
-                  Very <em>you.</em>
-                </h1>
-                <p>
-                  Your profile, your preferences, your little wishlist universe.
-                </p>
+                <div>
+                  <span className="eyebrow">MAKE YOURSELF AT HOME</span>
+                  <h1>
+                    Very <em>you.</em>
+                  </h1>
+                  <p>
+                    Your profile, your preferences, your little wishlist
+                    universe.
+                  </p>
+                </div>
               </section>
-              <div className="settings-grid">
-                <section className="settings-card">
-                  <h3>
-                    <Settings2 size={19} />
-                    Your profile
-                  </h3>
-                  {isDemo ? (
-                    <EmptyState
-                      title="A shelf with your name on it."
-                      body="Sign in to save your wishes across devices and share with your people."
-                      action={
-                        <button
-                          className="btn primary"
-                          onClick={() => setAuthOpen(true)}
-                        >
-                          Create my account
-                          <ArrowRight size={16} />
+              {loading || !authReady ? (
+                <Skeletons />
+              ) : loadError ? (
+                <EmptyState
+                  title="Your settings couldn’t load."
+                  body="Use Try again above to reconnect. Your saved profile has not changed."
+                />
+              ) : (
+                <div className="settings-grid">
+                  <section className="settings-card">
+                    <h3>
+                      <Settings2 size={19} />
+                      Your profile
+                    </h3>
+                    {isDemo ? (
+                      <EmptyState
+                        title="A shelf with your name on it."
+                        body="Sign in to save your wishes across devices and share with your people."
+                        action={
+                          <button
+                            className="btn primary"
+                            onClick={() => setAuthOpen(true)}
+                          >
+                            Create my account
+                            <ArrowRight size={16} />
+                          </button>
+                        }
+                      />
+                    ) : (
+                      <form
+                        className="form-stack"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          saveProfile();
+                        }}
+                      >
+                        <label>
+                          Display name
+                          <input
+                            required
+                            maxLength={80}
+                            value={profileName}
+                            onChange={(e) => setProfileName(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          Email
+                          <input value={user?.email ?? ""} disabled />
+                        </label>
+                        <label>
+                          New password <span className="muted">(optional)</span>
+                          <input
+                            type="password"
+                            autoComplete="new-password"
+                            minLength={8}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="At least 8 characters"
+                          />
+                        </label>
+                        <button className="btn primary" disabled={settingsBusy}>
+                          {settingsBusy ? "Saving…" : "Save my profile"}
+                          <Check size={16} />
                         </button>
-                      }
-                    />
-                  ) : (
-                    <form
-                      className="form-stack"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        saveProfile();
-                      }}
-                    >
-                      <label>
-                        Display name
-                        <input
-                          required
-                          maxLength={80}
-                          value={profileName}
-                          onChange={(e) => setProfileName(e.target.value)}
-                        />
-                      </label>
-                      <label>
-                        Email
-                        <input value={user?.email ?? ""} disabled />
-                      </label>
-                      <label>
-                        New password <span className="muted">(optional)</span>
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          minLength={8}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="At least 8 characters"
-                        />
-                      </label>
-                      <button className="btn primary" disabled={settingsBusy}>
-                        {settingsBusy ? "Saving…" : "Save my profile"}
-                        <Check size={16} />
+                      </form>
+                    )}
+                  </section>
+                  <section className="settings-card">
+                    <h3>
+                      <Sun size={19} />
+                      Set the mood
+                    </h3>
+                    <p className="muted">
+                      A little light. A little after-hours.
+                    </p>
+                    <div className="theme-options">
+                      <button
+                        className={theme === "light" ? "selected" : ""}
+                        onClick={() => {
+                          if (theme !== "light") toggleTheme();
+                        }}
+                      >
+                        <span className="theme-preview light-preview">
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                        <Sun size={17} />
+                        Daydream{theme === "light" && <Check size={15} />}
                       </button>
-                    </form>
-                  )}
-                </section>
-                <section className="settings-card">
-                  <h3>
-                    <Sun size={19} />
-                    Set the mood
-                  </h3>
-                  <p className="muted">A little light. A little after-hours.</p>
-                  <div className="theme-options">
-                    <button
-                      className={theme === "light" ? "selected" : ""}
-                      onClick={() => {
-                        if (theme !== "light") toggleTheme();
-                      }}
-                    >
-                      <span className="theme-preview light-preview">
-                        <i />
-                        <i />
-                        <i />
+                      <button
+                        className={theme === "dark" ? "selected" : ""}
+                        onClick={() => {
+                          if (theme !== "dark") toggleTheme();
+                        }}
+                      >
+                        <span className="theme-preview dark-preview">
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                        <Moon size={17} />
+                        After hours{theme === "dark" && <Check size={15} />}
+                      </button>
+                    </div>
+                    <p className="form-footnote">
+                      Animations automatically tone down when your device asks
+                      for reduced motion.
+                    </p>
+                  </section>
+                  <section className="settings-card">
+                    <h3>
+                      <ShieldCheck size={19} />
+                      Your data, your space
+                    </h3>
+                    <ul className="privacy-list">
+                      <li>
+                        <Check size={16} />
+                        Your shelf is private by default.
+                      </li>
+                      <li>
+                        <Check size={16} />
+                        Shared access is checked by the database.
+                      </li>
+                      <li>
+                        <Check size={16} />
+                        Screenshot OCR runs on your device.
+                      </li>
+                      <li>
+                        <Check size={16} />
+                        AI search uses only your shelf and spaces you can
+                        access; selected product details are sent to the AI
+                        service.
+                      </li>
+                    </ul>
+                    <button className="btn secondary" onClick={exportCsv}>
+                      <Download size={16} />
+                      Export current shelf
+                    </button>
+                  </section>
+                  <section className="settings-card">
+                    <h3>
+                      <Zap size={19} />
+                      Connected possibilities
+                    </h3>
+                    <div className="connection-row">
+                      <span>Personal & shared storage</span>
+                      <span className="pill">
+                        {isDemo ? "This device only" : "Connected"}
                       </span>
-                      <Sun size={17} />
-                      Daydream{theme === "light" && <Check size={15} />}
-                    </button>
-                    <button
-                      className={theme === "dark" ? "selected" : ""}
-                      onClick={() => {
-                        if (theme !== "dark") toggleTheme();
-                      }}
-                    >
-                      <span className="theme-preview dark-preview">
-                        <i />
-                        <i />
-                        <i />
+                    </div>
+                    <div className="connection-row">
+                      <span>Product-page previews</span>
+                      <span className="pill">
+                        {isDemo ? "Sign in" : "On demand"}
                       </span>
-                      <Moon size={17} />
-                      After hours{theme === "dark" && <Check size={15} />}
-                    </button>
-                  </div>
-                  <p className="form-footnote">
-                    Animations automatically tone down when your device asks for
-                    reduced motion.
-                  </p>
-                </section>
-                <section className="settings-card">
-                  <h3>
-                    <ShieldCheck size={19} />
-                    Your data, your space
-                  </h3>
-                  <ul className="privacy-list">
-                    <li>
-                      <Check size={16} />
-                      Your shelf is private by default.
-                    </li>
-                    <li>
-                      <Check size={16} />
-                      Shared access is checked by the database.
-                    </li>
-                    <li>
-                      <Check size={16} />
-                      Screenshot OCR runs on your device.
-                    </li>
-                    <li>
-                      <Check size={16} />
-                      AI search uses only your shelf and spaces you can access;
-                      selected product details are sent to the AI service.
-                    </li>
-                  </ul>
-                  <button className="btn secondary" onClick={exportCsv}>
-                    <Download size={16} />
-                    Export current shelf
-                  </button>
-                </section>
-                <section className="settings-card">
-                  <h3>
-                    <Zap size={19} />
-                    Connected possibilities
-                  </h3>
-                  <div className="connection-row">
-                    <span>Personal & shared storage</span>
-                    <span className="pill">
-                      {isDemo ? "This device only" : "Connected"}
-                    </span>
-                  </div>
-                  <div className="connection-row">
-                    <span>Product-page previews</span>
-                    <span className="pill">
-                      {isDemo ? "Sign in" : "On demand"}
-                    </span>
-                  </div>
-                  <div className="connection-row">
-                    <span>Shopping comparison provider</span>
-                    <span className="pill">
-                      {statusInfo.comparison ? "Connected" : "Store searches"}
-                    </span>
-                  </div>
-                  <div className="connection-row">
-                    <span>Scheduled price checks</span>
-                    <span className="pill">
-                      {statusInfo.scheduled ? "Configured" : "On-demand only"}
-                    </span>
-                  </div>
-                  <p className="form-footnote">
-                    Some retailers block automated previews. A manual entry or
-                    screenshot always keeps your wish usable.
-                  </p>
-                  {isDemo ? (
-                    <button
-                      className="text-btn"
-                      onClick={() => {
-                        localStorage.removeItem("khwahish:demo:v1");
-                        setItems([]);
-                        setLibraries(
-                          DEMO_LIBRARIES.filter((l) => l.kind === "personal"),
-                        );
-                        setActiveId("demo-personal");
-                        notify("Guest shelf cleared on this device.");
-                      }}
-                    >
-                      Clear guest shelf
-                    </button>
-                  ) : (
-                    <button className="text-btn" onClick={signOut}>
-                      <LogOut size={16} />
-                      Sign out
-                    </button>
-                  )}
-                </section>
-              </div>
+                    </div>
+                    <div className="connection-row">
+                      <span>Shopping comparison provider</span>
+                      <span className="pill">
+                        {statusInfo.comparison ? "Connected" : "Store searches"}
+                      </span>
+                    </div>
+                    <div className="connection-row">
+                      <span>Scheduled price checks</span>
+                      <span className="pill">
+                        {statusInfo.scheduled ? "Configured" : "On-demand only"}
+                      </span>
+                    </div>
+                    <p className="form-footnote">
+                      Some retailers block automated previews. A manual entry or
+                      screenshot always keeps your wish usable.
+                    </p>
+                    {isDemo ? (
+                      <button
+                        className="text-btn"
+                        onClick={() => {
+                          localStorage.removeItem("khwahish:demo:v1");
+                          setItems([]);
+                          setLibraries(
+                            DEMO_LIBRARIES.filter((l) => l.kind === "personal"),
+                          );
+                          setActiveId("demo-personal");
+                          notify("Guest shelf cleared on this device.");
+                        }}
+                      >
+                        Clear guest shelf
+                      </button>
+                    ) : (
+                      <button className="text-btn" onClick={signOut}>
+                        <LogOut size={16} />
+                        Sign out
+                      </button>
+                    )}
+                  </section>
+                </div>
+              )}
             </>
           )}
           <footer className="app-footer">

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowUpRight,
   ShoppingBag,
@@ -236,6 +237,24 @@ export function Toast({
   const remaining = useRef(5000);
   const started = useRef(0);
   const closeRef = useRef(onClose);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const update = () =>
+      setContainer(
+        Array.from(
+          document.querySelectorAll<HTMLDialogElement>("dialog[open]"),
+        ).at(-1) ?? document.body,
+      );
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["open"],
+      childList: true,
+    });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
@@ -253,7 +272,7 @@ export function Toast({
   }, [paused]);
   const Icon =
     kind === "error" ? CircleAlert : kind === "success" ? CircleCheck : Info;
-  return (
+  const content = (
     <div
       className={`toast toast-${kind}`}
       role={kind === "error" ? "alert" : "status"}
@@ -277,6 +296,7 @@ export function Toast({
       </button>
     </div>
   );
+  return container ? createPortal(content, container) : null;
 }
 export function ConfirmDialog({
   open,

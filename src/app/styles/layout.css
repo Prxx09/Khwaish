@@ -16,6 +16,9 @@
   }
   .header-brand {
     flex-shrink: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
   .brand {
     display: flex;
@@ -142,18 +145,6 @@
     padding: 4px;
     border-radius: var(--radius-pill);
   }
-  .account-popover {
-    position: relative;
-  }
-  .account-popover > summary {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    align-items: center;
-  }
-  .account-popover > summary::-webkit-details-marker {
-    display: none;
-  }
   .account-menu {
     position: fixed;
     inset: auto;
@@ -268,7 +259,6 @@
   .page-heading > div {
     flex: 1;
   }
-  .demo-banner,
   .invite-banner {
     display: flex;
     flex-wrap: wrap;
@@ -281,11 +271,6 @@
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     background: var(--panel);
-  }
-  .demo-banner button {
-    min-height: 44px;
-    text-decoration: underline;
-    text-underline-offset: 4px;
   }
   .invite-banner > div {
     flex: 1;
@@ -320,6 +305,18 @@
     }
     .theme-name {
       display: inline;
+    }
+  }
+  @media (max-width: 639px) {
+    .app-header {
+      padding-inline: 12px;
+      gap: 8px;
+    }
+    .header-actions {
+      gap: 4px;
+    }
+    .brand {
+      font-size: 22px;
     }
   }
   @media (min-width: 1024px) {

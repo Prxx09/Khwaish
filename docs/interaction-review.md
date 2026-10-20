@@ -1,5 +1,9 @@
 # Interaction review — 19 October 2026
 
+## 20 October UI refinement
+
+The seven-phase presentation revision and its browser evidence are documented in [UI refinement report](ui-refinement-report.md). The older verification limits below describe the 19 October revision; this newer revision includes actual Chromium captures and interaction checks. Live auth delivery and external-service limitations are still explicitly separated from fixture coverage in the newer report.
+
 ## Changes
 
 - Auth initialization ignores stale getUser results after a newer auth event. Password recovery events open account settings. Client requests time out after 25 seconds. Client initialization failures are caught inside the sign-in submit handler.

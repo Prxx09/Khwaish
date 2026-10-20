@@ -1,0 +1,246 @@
+{
+  "baseline": false,
+  "checks": [
+    {
+      "name": "No horizontal page overflow at 320",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Detail arrow-key navigation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Detail Home-key navigation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Status stays local until Save",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Discard restores status",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Save persists status",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Manual add persists in guest storage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Guest wishes survive reload",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Search empty state",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Local chat answers before attachments",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Chat attachment opens wish",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Clear chat removes turns",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Chat suggestions follow space",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme persists using unchanged key",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Must-have heart persists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Priority filter applies",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Category filter applies",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sort orders prices",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CSV export uses Khwaish filename",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Delete wish persists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Dialog contains keyboard focus",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Dialog returns focus",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Guest price checks are explained and disabled",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Guest sharing opens sign in",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Invite banner persists token",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Dismiss invite clears token",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Price check sends wish ID to existing API",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Price check shows success feedback",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Price history remains available",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Compare renders offers and store searches",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Signed-in comment add uses existing flow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Own comment delete updates conversation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Clear own messages updates conversation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Member role control remains connected",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Revoke invitation updates pending list",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Invite generation displays returned link",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Copy invitation uses clipboard",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Remove member updates visible access",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "AI response labels and attachments",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "AI failure falls back with error feedback",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "screenshots": [
+    "320-light-smallest-width.png",
+    "1280-dark-ask-ai-pending.png",
+    "1280-dark-ask-ai-answer.png",
+    "1280-dark-ask-local-fallback.png"
+  ],
+  "audit": [
+    {
+      "width": 320,
+      "theme": "light",
+      "name": "smallest-width",
+      "overflow": false,
+      "small": [],
+      "header": 64
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "name": "ask-ai-pending",
+      "overflow": false,
+      "small": [],
+      "header": 64
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "name": "ask-ai-answer",
+      "overflow": false,
+      "small": [],
+      "header": 64
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "name": "ask-local-fallback",
+      "overflow": false,
+      "small": [],
+      "header": 64
+    }
+  ],
+  "errors": []
+}
