@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   ArrowDownRight,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   Bell,
   Check,
@@ -116,6 +117,34 @@ export default function Workspace() {
   const [pendingQuestion, setPendingQuestion] = useState("");
   const [queryBusy, setQueryBusy] = useState(false);
   const queryVersion = useRef(0);
+  const chatPageRef = useRef<HTMLElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (view !== "ask") return;
+    const resize = () => {
+      const page = chatPageRef.current;
+      if (!page) return;
+      const nav = document.querySelector(".mobile-nav");
+      const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+      const viewport = window.visualViewport;
+      const bottom = viewport
+        ? viewport.height + viewport.offsetTop
+        : window.innerHeight;
+      page.style.height = `${Math.max(280, bottom - page.getBoundingClientRect().top - navHeight - 12)}px`;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", resize);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
+    };
+  }, [view, authReady, user]);
+  useEffect(() => {
+    if (view !== "ask") return;
+    const scroll = chatScrollRef.current;
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+  }, [view, chatTurns.length, pendingQuestion]);
   useEffect(() => {
     queryVersion.current++;
     setChatTurns([]);
@@ -1150,7 +1179,10 @@ export default function Workspace() {
             )}
           </div>
         </header>
-        <main id="main-content" className="main-content">
+        <main
+          id="main-content"
+          className={`main-content${view === "ask" ? " chat-main" : ""}`}
+        >
           {isDemo && authReady && (
             <div className="demo-banner">
               <span>
@@ -1654,109 +1686,57 @@ export default function Workspace() {
             </>
           )}
           {view === "ask" && (
-            <>
-              <section className="page-heading ask-heading">
-                <span className="ask-hero-icon">
-                  <Sparkles size={30} />
-                </span>
-                <span className="eyebrow">
-                  A LITTLE CLARITY FOR YOUR COLLECTION
-                </span>
+            <section
+              className="chat-page"
+              aria-label="Ask Khwahish"
+              ref={chatPageRef}
+            >
+              <header className="chat-header">
                 <h1>
-                  Ask your <em>wishlist.</em>
+                  <Sparkles size={20} /> Ask Khwahish
                 </h1>
-                <p>
-                  Less scrolling. More “that’s the one.” Find wishes, check
-                  budgets, and spot price drops using everyday language.
-                </p>
-              </section>
-              <div className="wishlist-conversation">
-                <div className="query-panel">
-                  <div className="query-scope">
-                    <button
-                      type="button"
-                      className="text-btn"
-                      disabled={!chatTurns.length && !query && !queryBusy}
-                      onClick={() => {
-                        queryVersion.current++;
-                        setQueryBusy(false);
-                        setQuery("");
-                        setChatTurns([]);
-                        setPendingQuestion("");
-                        notify("Conversation cleared.");
-                      }}
-                    >
-                      Clear chat
-                    </button>
-                    <span>Look in</span>
-                    <select
-                      aria-label="Query library"
-                      value={queryScope}
-                      onChange={(e) => {
-                        setQueryScope(e.target.value);
-                        queryVersion.current++;
-                        setQueryBusy(false);
-                      }}
-                    >
-                      <option value="all">All my libraries</option>
-                      {libraries.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="private-badge">
-                      <ShieldCheck size={12} />
-                      {statusInfo.aiWishlist && !isDemo
-                        ? "AI uses accessible wishlist details"
-                        : "Local wishlist search"}
-                    </span>
-                  </div>
-                  <form
-                    className="query-input"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      runQuery();
+                <div className="query-scope">
+                  <button
+                    type="button"
+                    className="text-btn"
+                    disabled={!chatTurns.length && !query && !queryBusy}
+                    onClick={() => {
+                      queryVersion.current++;
+                      setQueryBusy(false);
+                      setQuery("");
+                      setChatTurns([]);
+                      setPendingQuestion("");
+                      notify("Conversation cleared.");
                     }}
                   >
-                    <Sparkles size={22} />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      maxLength={500}
-                      aria-label="Ask your wishlist"
-                      placeholder="Show me electronics under ₹10,000…"
-                    />
-                    <button
-                      className="icon-btn accent"
-                      disabled={!query.trim() || queryBusy}
-                      aria-label="Ask question"
-                    >
-                      {queryBusy ? (
-                        <LoaderCircle size={21} className="spin" />
-                      ) : (
-                        <ArrowRight size={21} />
-                      )}
-                    </button>
-                  </form>
-                  <div className="query-prompts">
-                    {[
-                      "What got cheaper?",
-                      "Show high priority items",
-                      "What is the total cost?",
-                      "Show electronics under ₹5,000",
-                    ].map((p) => (
-                      <button
-                        disabled={queryBusy}
-                        onClick={() => runQuery(p)}
-                        key={p}
-                      >
-                        {p}
-                        <ArrowUpRight size={13} />
-                      </button>
+                    Clear chat
+                  </button>
+                  <span>Look in</span>
+                  <select
+                    aria-label="Query library"
+                    value={queryScope}
+                    onChange={(e) => {
+                      setQueryScope(e.target.value);
+                      queryVersion.current++;
+                      setQueryBusy(false);
+                    }}
+                  >
+                    <option value="all">All my libraries</option>
+                    {libraries.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
                     ))}
-                  </div>
+                  </select>
+                  <span className="private-badge">
+                    <ShieldCheck size={12} />
+                    {statusInfo.aiWishlist && !isDemo
+                      ? "AI uses accessible wishlist details"
+                      : "Local wishlist search"}
+                  </span>
                 </div>
+              </header>
+              <div className="chat-scroll" ref={chatScrollRef}>
                 {chatTurns.length || pendingQuestion ? (
                   <section
                     className="chat-transcript"
@@ -1845,32 +1825,67 @@ export default function Workspace() {
                     )}
                   </section>
                 ) : (
-                  <div className="query-explainer">
-                    <div>
-                      <Search size={21} />
-                      <strong>Find your thing</strong>
-                      <p>
-                        Search a product, category, store, priority, or budget.
-                      </p>
-                    </div>
-                    <div>
-                      <TrendingDown size={21} />
-                      <strong>Spot a little win</strong>
-                      <p>Find products with a recorded price drop.</p>
-                    </div>
-                    <div>
-                      <ShieldCheck size={21} />
-                      <strong>Keep it personal</strong>
-                      <p>
-                        AI search sends details from your selected accessible
-                        libraries to Groq. Guest and fallback search run
-                        locally.
-                      </p>
+                  <div className="chat-welcome">
+                    <Sparkles size={32} aria-hidden="true" />
+                    <h2>What’s on your wishlist?</h2>
+                    <p>
+                      Find a wish, compare saved prices, or plan your next
+                      purchase.
+                    </p>
+                    <div className="query-prompts">
+                      {[
+                        "What got cheaper?",
+                        "Show high priority items",
+                        "What is the total cost?",
+                        "Show electronics under ₹5,000",
+                      ].map((p) => (
+                        <button
+                          disabled={queryBusy}
+                          onClick={() => runQuery(p)}
+                          key={p}
+                        >
+                          {p}
+                          <ArrowUpRight size={13} />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
-            </>
+              <div className="query-panel">
+                <form
+                  className="query-input"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    runQuery();
+                  }}
+                >
+                  <Sparkles size={22} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    maxLength={500}
+                    aria-label="Ask your wishlist"
+                    placeholder="Show me electronics under ₹10,000…"
+                  />
+                  <button
+                    className="icon-btn accent"
+                    disabled={!query.trim() || queryBusy}
+                    aria-label="Ask question"
+                  >
+                    {queryBusy ? (
+                      <LoaderCircle size={21} className="spin" />
+                    ) : (
+                      <ArrowUp size={21} />
+                    )}
+                  </button>
+                </form>
+
+                <p className="chat-composer-note">
+                  Answers use saved wishlist details and recorded prices.
+                </p>
+              </div>
+            </section>
           )}
           {view === "settings" && (
             <>
