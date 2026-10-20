@@ -988,197 +988,90 @@ export default function Workspace() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside className={`sidebar ${sidebar ? "open" : ""}`}>
-        <div className="sidebar-brand">
+      <header className="app-header">
+        <button
+          className="header-brand"
+          aria-label="Khwaish — My shelf"
+          onClick={() => go("shelf")}
+        >
           <Brand />
-          <button
-            className="icon-btn mobile-only"
-            aria-label="Close navigation"
-            onClick={() => setSidebar(false)}
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="workspace-label">
-          <span className="online-dot" />
-          {isDemo ? "YOUR GUEST SHELF" : "YOUR LITTLE UNIVERSE"}
-        </div>
-        <nav className="main-nav" aria-label="Main navigation">
+        </button>
+        <nav className="desktop-nav" aria-label="Main navigation">
           {NAV.map(({ id, name, Icon }) => (
             <button
               key={id}
-              className={view === id ? "active" : ""}
+              aria-current={view === id ? "page" : undefined}
               onClick={() => go(id)}
             >
-              <Icon size={19} />
+              <Icon size={18} />
               <span>{name}</span>
-              {id === "shelf" && (
-                <span className="nav-count">
-                  {items.filter((i) => i.library_id === personal?.id).length}
-                </span>
-              )}
-              {id === "watch" && watchDrops.length > 0 && (
-                <span className="nav-alert" />
-              )}
-              {id === "ask" && <span className="mini-tag">SMART</span>}
+              <span className="nav-count">
+                {id === "shelf"
+                  ? items.filter((i) => i.library_id === personal?.id).length
+                  : id === "shared"
+                    ? shared.length
+                    : id === "watch"
+                      ? watchDrops.length
+                      : chatTurns.length}
+              </span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-section">
-          <div>
-            <span>YOUR SPACES</span>
-            <button
-              className="mini-icon"
-              aria-label="Create a shared space"
-              onClick={() => {
-                setShareLibrary(undefined);
-                setShareOpen(true);
-              }}
-            >
-              <Plus size={15} />
-            </button>
-          </div>
-          {shared.map((lib, i) => (
-            <button
-              key={lib.id}
-              className={`space-link ${activeId === lib.id && view === "shelf" ? "active" : ""}`}
-              onClick={() => go("shelf", lib.id)}
-            >
-              <span className={`space-icon color-${i % 3}`}>
-                <Users size={14} />
-              </span>
-              <span>{lib.name}</span>
-              <ChevronRight size={14} />
-            </button>
-          ))}
-          {shared.length === 0 && (
-            <button
-              className="space-link muted"
-              onClick={() => {
-                setShareLibrary(undefined);
-                setShareOpen(true);
-              }}
-            >
-              <Plus size={15} />
-              Start a shared wishlist
-            </button>
-          )}
-        </div>
-        <div className="sidebar-bottom">
-          <div className="sidebar-promo">
-            <span className="tiny-stars">✦ ✧</span>
-            <h3>
-              Good taste.
-              <br />
-              Great company.
-            </h3>
-            <p>
-              Your wishlist is better
-              <br />
-              with your people.
-            </p>
-            <button
-              onClick={() => {
-                setShareLibrary(undefined);
-                setShareOpen(true);
-              }}
-            >
-              Start a shared space <ArrowUpRight size={15} />
-            </button>
-          </div>
+        <div className="header-actions">
           <button
-            className={`settings-link ${view === "settings" ? "active" : ""}`}
-            onClick={() => go("settings")}
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "Daydream" : "After hours"} theme`}
+            title={theme === "dark" ? "After hours" : "Daydream"}
           >
-            <Settings2 size={18} />
-            Settings & profile
+            {theme === "dark" ? <Moon size={20} /> : <Sun size={20} />}
+            <span className="theme-name">
+              {theme === "dark" ? "After hours" : "Daydream"}
+            </span>
           </button>
-          <div className="account">
+          <button
+            className="icon-btn notification-btn"
+            onClick={() => go("watch")}
+            aria-label={`Price watch — ${watchDrops.length} recorded drops`}
+            title="Price watch"
+          >
+            <Bell size={20} />
+            <span className="notification-count">{watchDrops.length}</span>
+          </button>
+          <button
+            className="account-trigger"
+            popoverTarget="account-menu"
+            aria-label="Account menu"
+            title="Account menu"
+          >
+            <Avatar name={isDemo ? "You" : displayName} />
+          </button>
+          <div className="account-menu" id="account-menu" popover="auto">
+            <strong>{isDemo ? "Your guest shelf" : displayName}</strong>
+            <small>{isDemo ? "Saved on this device" : user?.email}</small>
             <button
-              className="account-avatar"
-              aria-label={
-                isDemo ? "Sign in to your account" : "Edit your profile"
-              }
-              onClick={() => (isDemo ? setAuthOpen(true) : go("settings"))}
+              onClick={() => {
+                document.getElementById("account-menu")?.hidePopover();
+                go("settings");
+              }}
             >
-              <Avatar name={isDemo ? "You" : displayName} />
+              <Settings2 size={18} />
+              Profile & settings
             </button>
-            <div>
-              <strong>{isDemo ? "Your space awaits" : displayName}</strong>
-              <span>{isDemo ? "Sign in to save & share" : user?.email}</span>
-            </div>
             <button
-              className="icon-btn"
-              onClick={() => (isDemo ? setAuthOpen(true) : signOut())}
-              aria-label={isDemo ? "Sign in" : "Sign out"}
+              onClick={() => {
+                document.getElementById("account-menu")?.hidePopover();
+                if (isDemo) setAuthOpen(true);
+                else void signOut();
+              }}
             >
-              {isDemo ? <LogIn size={17} /> : <LogOut size={17} />}
+              {isDemo ? <LogIn size={18} /> : <LogOut size={18} />}
+              {isDemo ? "Sign in" : "Sign out"}
             </button>
           </div>
         </div>
-      </aside>
-      {sidebar && (
-        <button
-          className="sidebar-scrim"
-          aria-label="Close navigation"
-          onClick={() => setSidebar(false)}
-        />
-      )}
+      </header>
       <div className="app-main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <button
-              className="icon-btn mobile-only"
-              aria-label="Open navigation"
-              onClick={() => setSidebar(true)}
-            >
-              <Menu size={21} />
-            </button>
-            <span className="breadcrumb">
-              Your space <ChevronRight size={13} />
-              <strong>
-                {view === "shelf"
-                  ? (activeLibrary?.name ?? "My wishlist")
-                  : (NAV.find((n) => n.id === view)?.name ?? "Settings")}
-              </strong>
-            </span>
-          </div>
-          <div className="topbar-actions">
-            <button
-              className="theme-toggle"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-            >
-              <Sun size={15} className={theme === "light" ? "selected" : ""} />
-              <Moon size={15} className={theme === "dark" ? "selected" : ""} />
-            </button>
-            <button
-              className="icon-btn notification-btn"
-              onClick={() => go("watch")}
-              aria-label="View price drops"
-            >
-              <Bell size={19} />
-              {watchDrops.length > 0 && <i />}
-            </button>
-            {isDemo ? (
-              <button
-                className="btn primary small-btn"
-                onClick={() => setAuthOpen(true)}
-              >
-                Make it mine
-                <ArrowUpRight size={15} />
-              </button>
-            ) : (
-              <button
-                className="profile-button"
-                onClick={() => go("settings")}
-                aria-label="Open profile"
-              >
-                <Avatar name={displayName} size="small" />
-              </button>
-            )}
-          </div>
-        </header>
         <main
           id="main-content"
           className={`main-content${view === "ask" ? " chat-main" : ""}`}
@@ -2097,16 +1990,11 @@ export default function Workspace() {
           <button
             key={id}
             className={view === id ? "active" : ""}
+            aria-current={view === id ? "page" : undefined}
             onClick={() => go(id)}
           >
             <Icon size={20} />
-            <span>
-              {name === "Ask Khwaish"
-                ? "Ask"
-                : name === "Shared spaces"
-                  ? "Shared"
-                  : name}
-            </span>
+            <span>{name}</span>
           </button>
         ))}
       </nav>
