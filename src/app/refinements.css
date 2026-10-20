@@ -197,34 +197,12 @@ kbd {
   font-size: 13px;
   color: var(--muted);
 }
-.workspace-command {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 8px 0 26px;
-}
-.workspace-command h2 {
-  font-size: clamp(22px, 2vw, 30px);
-  letter-spacing: -0.8px;
-  margin: 9px 0 5px;
-}
-.workspace-command p {
-  color: var(--muted);
-  font-size: 14px;
-  margin: 0;
-}
-.workspace-shortcuts {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-}
 @media (min-width: 1100px) {
   .app {
     padding: 0 16px;
   }
   .sidebar {
-    position: sticky;
+    position: relative;
     top: 0;
     left: auto;
     bottom: auto;
@@ -360,20 +338,6 @@ kbd {
   }
   .sidebar .brand {
     font-size: 22px;
-  }
-}
-@media (max-width: 760px) {
-  .workspace-command {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .workspace-shortcuts {
-    width: 100%;
-  }
-  .workspace-shortcuts .btn {
-    flex: 1;
-    font-size: 13px;
   }
 }
 .ocr-candidates {

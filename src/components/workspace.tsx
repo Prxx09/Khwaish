@@ -1151,34 +1151,6 @@ export default function Workspace() {
           </div>
         </header>
         <main id="main-content" className="main-content">
-          <section className="workspace-command">
-            <div>
-              <span className="eyebrow">YOUR WISHLIST WORKSPACE</span>
-              <h2>
-                {isDemo
-                  ? "A space for your next obsession."
-                  : `Hey ${displayName.split(" ")[0]}, what caught your eye?`}
-              </h2>
-              <p>
-                {items.length} wishes · {shared.length} shared spaces · curated
-                by you
-              </p>
-            </div>
-            <div className="workspace-shortcuts">
-              <button className="btn secondary" onClick={() => go("ask")}>
-                <Sparkles size={17} />
-                Ask my shelf
-              </button>
-              <button
-                className="btn primary"
-                disabled={!canEdit}
-                onClick={() => setCaptureOpen(true)}
-              >
-                <Plus size={18} />
-                Save a find
-              </button>
-            </div>
-          </section>
           {isDemo && authReady && (
             <div className="demo-banner">
               <span>

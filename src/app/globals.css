@@ -128,9 +128,14 @@ input::placeholder,
 textarea::placeholder {
   color: var(--subtle);
 }
-:focus-visible {
+:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--purple);
   outline-offset: 4px;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
 }
 h1,
 h2,
@@ -1610,7 +1615,7 @@ button svg {
   color: var(--purple);
 }
 .query-input:focus-within {
-  border-color: var(--purple);
+  border-color: var(--accent);
 }
 .query-input input {
   background: transparent;
