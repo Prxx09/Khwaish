@@ -1,7 +1,22 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, ShoppingBag, Sparkles, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  ShoppingBag,
+  Sparkles,
+  X,
+  CircleCheck,
+  CircleAlert,
+  Info,
+  LoaderCircle,
+} from "lucide-react";
 import { safeUrl } from "@/lib/types";
+export function presentMessage(message: string) {
+  return message
+    .replace(/\bGroq\b/gi, "AI")
+    .replace(/\blibraries\b/gi, "spaces")
+    .replace(/\blibrary\b/gi, "space");
+}
 export function Brand({ small = false }: { small?: boolean }) {
   return (
     <div className={`brand ${small ? "small" : ""}`}>
@@ -48,11 +63,26 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
   const id = useId();
   useEffect(() => {
     const d = ref.current;
-    if (open && !d?.open) d?.showModal();
-    else if (!open && d?.open) d.close();
+    if (open && !d?.open) {
+      returnFocus.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      d?.showModal();
+    } else if (!open && d?.open) {
+      d.close();
+      returnFocus.current?.focus();
+    }
+    return () => {
+      if (d?.open) {
+        d.close();
+        if (returnFocus.current?.isConnected) returnFocus.current.focus();
+      }
+    };
   }, [open]);
   useEffect(() => {
     if (!open) return;
@@ -173,7 +203,7 @@ export function StoreLink({
 }
 export function Skeletons() {
   return (
-    <div className="product-grid">
+    <div className="product-grid" role="status" aria-label="Loading wishes">
       {Array.from({ length: 6 }, (_, i) => (
         <div className="card-skeleton" key={i}>
           <div />
@@ -187,7 +217,113 @@ export function Skeletons() {
 export function ErrorText({ children }: { children: ReactNode }) {
   return children ? (
     <p className="inline-error" role="alert">
-      {children}
+      {typeof children === "string" ? presentMessage(children) : children}
     </p>
   ) : null;
+}
+
+export type ToastKind = "success" | "error" | "info";
+export function Toast({
+  message,
+  kind,
+  onClose,
+}: {
+  message: string;
+  kind: ToastKind;
+  onClose: () => void;
+}) {
+  const [paused, setPaused] = useState(false);
+  const remaining = useRef(5000);
+  const started = useRef(0);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    if (paused) return;
+    started.current = Date.now();
+    const timer = setTimeout(() => closeRef.current(), remaining.current);
+    return () => {
+      clearTimeout(timer);
+      remaining.current = Math.max(
+        0,
+        remaining.current - (Date.now() - started.current),
+      );
+    };
+  }, [paused]);
+  const Icon =
+    kind === "error" ? CircleAlert : kind === "success" ? CircleCheck : Info;
+  return (
+    <div
+      className={`toast toast-${kind}`}
+      role={kind === "error" ? "alert" : "status"}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setPaused(false);
+      }}
+    >
+      <Icon size={20} />
+      <p>{presentMessage(message)}</p>
+      <button
+        className="mini-icon"
+        type="button"
+        onClick={onClose}
+        aria-label="Dismiss notification"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+export function ConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmLabel = "Remove",
+  busy = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  busy?: boolean;
+}) {
+  return (
+    <Modal
+      open={open}
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      title={title}
+    >
+      <p className="confirm-description">{description}</p>
+      <div className="dialog-footer">
+        <button
+          type="button"
+          className="btn secondary"
+          autoFocus
+          disabled={busy}
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn danger"
+          disabled={busy}
+          onClick={() => void onConfirm()}
+        >
+          {busy ? <LoaderCircle size={18} className="spin" /> : null}
+          {busy ? "Working…" : confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  );
 }

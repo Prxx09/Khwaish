@@ -59,6 +59,10 @@ import {
   Modal,
   Skeletons,
   ProductImage,
+  Toast,
+  ConfirmDialog,
+  type ToastKind,
+  presentMessage,
 } from "./ui";
 import AuthDialog from "./auth-dialog";
 import CaptureDialog, { type Draft } from "./capture-dialog";
@@ -99,7 +103,11 @@ export default function Workspace() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareLibrary, setShareLibrary] = useState<Library | undefined>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState<{
+    id: number;
+    message: string;
+    kind: ToastKind;
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [status, setStatus] = useState("all");
@@ -143,6 +151,7 @@ export default function Workspace() {
   });
   const [confirmLibraryDelete, setConfirmLibraryDelete] =
     useState<Library | null>(null);
+  const [spaceDeleting, setSpaceDeleting] = useState(false);
   const isDemo = !user;
   const userId = user?.id ?? DEMO_USER;
   const displayName =
@@ -197,7 +206,11 @@ export default function Workspace() {
     : memberships.find(
         (m) => m.library_id === selected?.library_id && m.user_id === userId,
       )?.role;
-  const notify = useCallback((message: string) => setToast(message), []);
+  const notify = useCallback(
+    (message: string, kind: ToastKind = "info") =>
+      setToast({ id: Date.now(), message, kind }),
+    [],
+  );
 
   useEffect(() => {
     if (shareOpen && isDemo) {
@@ -326,7 +339,10 @@ export default function Workspace() {
       notify("Choose a new password in your profile settings.");
     }
     if (params.get("auth") === "error")
-      notify("That sign-in link could not be verified. Please sign in again.");
+      notify(
+        "That sign-in link could not be verified. Please sign in again.",
+        "error",
+      );
     if (!configured) {
       setAuthReady(true);
       return;
@@ -448,11 +464,6 @@ export default function Workspace() {
         );
       } catch {}
   }, [items, libraries, isDemo, authReady, dataOwner]);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 5200);
-    return () => clearTimeout(t);
-  }, [toast]);
   useEffect(() => {
     if (!user || !activeId || activeId.startsWith("demo-")) return;
     const client = createClient();
@@ -603,7 +614,10 @@ export default function Workspace() {
       setItems((items) => [item, ...items]);
       setActiveId(draft.library_id);
       setView("shelf");
-      notify("Saved on this device. Sign in to save wishes to your account.");
+      notify(
+        "Saved on this device. Sign in to save wishes to your account.",
+        "success",
+      );
       return true;
     }
     const client = createClient();
@@ -662,7 +676,10 @@ export default function Workspace() {
     setActiveId(draft.library_id);
     setView("shelf");
     await loadAccount(user!.id, true);
-    notify(`A new wish, safely shelved.${mediaWarning}`);
+    notify(
+      `A new wish, safely shelved.${mediaWarning}`,
+      mediaWarning ? "info" : "success",
+    );
     return true;
   }
   async function updateItem(id: string, patch: Partial<Item>) {
@@ -671,7 +688,7 @@ export default function Workspace() {
       items.map((i) => (i.id === id ? { ...i, ...patch } : i)),
     );
     if (isDemo) {
-      notify(patch.priority ? "Must-haves updated." : "Wish updated.");
+      notify(patch.priority ? "Priority updated." : "Wish updated.", "success");
       return true;
     }
     const allowed: Partial<Item> = {};
@@ -689,7 +706,7 @@ export default function Workspace() {
       if (key in patch) Object.assign(allowed, { [key]: patch[key] });
     if (allowed.product_url && !safeUrl(allowed.product_url)) {
       if (old) setItems((items) => items.map((i) => (i.id === id ? old : i)));
-      notify("Use a valid public product link.");
+      notify("Use a valid public product link.", "error");
       return false;
     }
     const { error } = await createClient()
@@ -700,7 +717,7 @@ export default function Workspace() {
       .single();
     if (error) {
       if (old) setItems((items) => items.map((i) => (i.id === id ? old : i)));
-      notify(error.message);
+      notify(error.message, "error");
       return false;
     }
     return true;
@@ -727,7 +744,7 @@ export default function Workspace() {
       }
     }
     setItems((all) => all.filter((i) => i.id !== item.id));
-    notify("Wish removed from your shelf.");
+    notify("Wish removed from your shelf.", "success");
   }
   async function refreshItem(item: Item) {
     const response = await fetch("/api/prices", {
@@ -749,6 +766,7 @@ export default function Workspace() {
     );
     notify(
       `Price checked: ${money(data.observation.price, data.observation.currency)}.`,
+      "success",
     );
   }
   async function createLibrary(name: string): Promise<Library | undefined> {
@@ -775,7 +793,7 @@ export default function Workspace() {
     setShareLibrary(library);
     setActiveId(library.id);
     setView("shelf");
-    notify("Shared space created.");
+    notify("Shared space created.", "success");
     return library;
   }
   async function join() {
@@ -795,7 +813,7 @@ export default function Workspace() {
       setActiveId(data);
       setView("shelf");
       await loadAccount(user.id);
-      notify("You’re in. Welcome to your shared space.");
+      notify("You’re in. Welcome to your shared space.", "success");
     } catch (e) {
       notify(
         e instanceof Error
@@ -803,6 +821,7 @@ export default function Workspace() {
           : typeof e === "object" && e && "message" in e
             ? String(e.message)
             : "Could not join this space.",
+        "error",
       );
     } finally {
       setJoining(false);
@@ -818,6 +837,7 @@ export default function Workspace() {
           error instanceof Error
             ? error.message
             : "Sign-out failed. Please try again.",
+          "error",
         );
         return;
       }
@@ -848,9 +868,12 @@ export default function Workspace() {
         setNewPassword("");
       }
       setProfile((p) => (p ? { ...p, display_name: profileName.trim() } : p));
-      notify("Your profile is updated.");
+      notify("Your profile is updated.", "success");
     } catch (e) {
-      notify(e instanceof Error ? e.message : "Profile could not be updated.");
+      notify(
+        e instanceof Error ? e.message : "Profile could not be updated.",
+        "error",
+      );
     } finally {
       setSettingsBusy(false);
     }
@@ -911,6 +934,7 @@ export default function Workspace() {
           error instanceof Error
             ? error.message
             : "AI search unavailable. Showing local matches.",
+          "error",
         );
       }
     } finally {
@@ -976,7 +1000,8 @@ export default function Workspace() {
           .remove(paths);
         if (mediaError) {
           notify(
-            "Could not remove all screenshots. The library has been kept; please try again.",
+            "Could not remove all screenshots. The space has been kept; please try again.",
+            "error",
           );
           return;
         }
@@ -988,14 +1013,14 @@ export default function Workspace() {
         .select("id")
         .single();
       if (error) {
-        notify(error.message);
+        notify(error.message, "error");
         return;
       }
       await loadAccount(user!.id, true);
     }
     setConfirmLibraryDelete(null);
     setActiveId(personal?.id ?? "");
-    notify("Shared space removed.");
+    notify("Shared space removed.", "success");
   }
 
   return (
@@ -1110,8 +1135,8 @@ export default function Workspace() {
                 <strong>A shared space is waiting for you.</strong>
                 <p>
                   {user
-                    ? "Join your friend’s library and start wishing together."
-                    : "Sign in or create an account to join your friend’s library."}
+                    ? "Join your friend’s space and start wishing together."
+                    : "Sign in or create an account to join your friend’s space."}
                 </p>
               </div>
               <button className="btn primary" disabled={joining} onClick={join}>
@@ -1654,7 +1679,7 @@ export default function Workspace() {
                             </small>
                           </div>
                           <p className="chat-answer-text">
-                            {turn.result.answer}
+                            {presentMessage(turn.result.answer)}
                           </p>
                           {turn.result.items.length > 0 && (
                             <div
@@ -1905,7 +1930,7 @@ export default function Workspace() {
                   <ul className="privacy-list">
                     <li>
                       <Check size={16} />
-                      Personal libraries are private by default.
+                      Your shelf is private by default.
                     </li>
                     <li>
                       <Check size={16} />
@@ -1917,8 +1942,8 @@ export default function Workspace() {
                     </li>
                     <li>
                       <Check size={16} />
-                      AI search uses only libraries you can access; selected
-                      product details are sent to Groq.
+                      AI search uses only your shelf and spaces you can access;
+                      selected product details are sent to the AI service.
                     </li>
                   </ul>
                   <button className="btn secondary" onClick={exportCsv}>
@@ -2005,19 +2030,12 @@ export default function Workspace() {
         ))}
       </nav>
       {toast && (
-        <div className="toast" role="status">
-          <span>
-            <Check size={16} />
-          </span>
-          {toast}
-          <button
-            className="mini-icon"
-            onClick={() => setToast("")}
-            aria-label="Dismiss notification"
-          >
-            <X size={15} />
-          </button>
-        </div>
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          kind={toast.kind}
+          onClose={() => setToast(null)}
+        />
       )}
       <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
       <CaptureDialog
@@ -2057,7 +2075,12 @@ export default function Workspace() {
           canEdit={selectedRole === "owner" || selectedRole === "editor"}
           isDemo={isDemo}
           userId={userId}
-          notify={notify}
+          notify={(message) =>
+            notify(
+              message,
+              /No messages|manually/i.test(message) ? "info" : "success",
+            )
+          }
         />
       )}
       <SharingDialog
@@ -2068,26 +2091,27 @@ export default function Workspace() {
         isDemo={isDemo}
         onCreate={createLibrary}
         onChanged={() => user && loadAccount(user.id, true)}
-        notify={notify}
+        notify={(message) =>
+          notify(message, /manually/i.test(message) ? "info" : "success")
+        }
       />
-      <Modal
+      <ConfirmDialog
         open={Boolean(confirmLibraryDelete)}
         onClose={() => setConfirmLibraryDelete(null)}
-        title="Remove this shared space?"
-        subtitle="This removes the library and all of its wishlist items and conversations for everyone."
-      >
-        <p className="notice">
-          This action cannot be undone. Your personal library is not affected.
-        </p>
-        <button
-          className="btn danger full"
-          onClick={() =>
-            confirmLibraryDelete && deleteLibrary(confirmLibraryDelete)
+        title="Remove this space?"
+        description="This removes the space, all its wishes, and conversations for everyone. Your shelf is not affected. This cannot be undone."
+        confirmLabel={`Remove ${confirmLibraryDelete?.name ?? "space"}`}
+        busy={spaceDeleting}
+        onConfirm={async () => {
+          if (!confirmLibraryDelete) return;
+          setSpaceDeleting(true);
+          try {
+            await deleteLibrary(confirmLibraryDelete);
+          } finally {
+            setSpaceDeleting(false);
           }
-        >
-          Remove {confirmLibraryDelete?.name}
-        </button>
-      </Modal>
+        }}
+      />
     </div>
   );
 }

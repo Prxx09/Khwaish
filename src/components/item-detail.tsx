@@ -24,7 +24,14 @@ import {
   type Item,
   type Profile,
 } from "@/lib/types";
-import { Avatar, ErrorText, Modal, ProductImage, StoreLink } from "./ui";
+import {
+  Avatar,
+  ErrorText,
+  Modal,
+  ProductImage,
+  StoreLink,
+  ConfirmDialog,
+} from "./ui";
 type Offer = {
   title: string;
   retailer: string;
@@ -138,6 +145,32 @@ export default function ItemDetail({
   const [variant, setVariant] = useState(item.variant ?? "");
   const [link, setLink] = useState(item.product_url ?? "");
   const [date, setDate] = useState(item.target_date ?? "");
+  const [status, setStatus] = useState(item.status);
+  const [priority, setPriority] = useState(item.priority);
+  const [tracking, setTracking] = useState(item.tracking_enabled ?? false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const dirty =
+    name !== item.product_name ||
+    notes !== item.notes ||
+    target !== (item.target_price?.toString() ?? "") ||
+    variant !== (item.variant ?? "") ||
+    link !== (item.product_url ?? "") ||
+    date !== (item.target_date ?? "") ||
+    status !== item.status ||
+    priority !== item.priority ||
+    tracking !== (item.tracking_enabled ?? false);
+  function discard() {
+    setName(item.product_name);
+    setNotes(item.notes);
+    setTarget(item.target_price?.toString() ?? "");
+    setVariant(item.variant ?? "");
+    setLink(item.product_url ?? "");
+    setDate(item.target_date ?? "");
+    setStatus(item.status);
+    setPriority(item.priority);
+    setTracking(item.tracking_enabled ?? false);
+    setError("");
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -220,9 +253,16 @@ export default function ItemDetail({
           variant,
           product_url: link || null,
           target_date: date || null,
+          status,
+          priority,
+          tracking_enabled: tracking,
         })
-      )
+      ) {
         notify("Details updated.");
+      } else
+        setError(
+          "Your changes were not saved. Review the notification and try again.",
+        );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save.");
     } finally {
@@ -362,9 +402,12 @@ export default function ItemDetail({
   return (
     <Modal
       open
-      onClose={onClose}
-      title="A closer look"
-      subtitle={`${item.retailer || "Your find"} · Saved ${new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+      onClose={() => {
+        if (dirty) setConfirmDiscard(true);
+        else onClose();
+      }}
+      title={item.product_name}
+      subtitle={`${item.retailer || "Saved wish"} · Saved ${new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
       sheet
     >
       <div className="detail-image">
@@ -412,6 +455,15 @@ export default function ItemDetail({
           {busy ? "Checking…" : "Check price"}
         </button>
       </div>
+      {(isDemo || !canEdit || !item.product_url) && (
+        <p className="form-footnote">
+          {isDemo
+            ? "Sign in to check live prices and enable scheduled tracking."
+            : !canEdit
+              ? "You can browse and comment. Only editors can change this wish or check prices."
+              : "Add a product link in Details to check prices."}
+        </p>
+      )}
       <div className="detail-tabs" role="tablist" aria-label="Product details">
         {[
           { id: "overview", label: "Details" },
@@ -421,410 +473,471 @@ export default function ItemDetail({
         ].map((t) => (
           <button
             role="tab"
+            id={`wish-tab-${item.id}-${t.id}`}
+            aria-controls={`wish-panel-${item.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
             aria-selected={tab === t.id}
             key={t.id}
             className={tab === t.id ? "active" : ""}
             onClick={() => setTab(t.id)}
+            onKeyDown={(event) => {
+              if (
+                !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+              )
+                return;
+              event.preventDefault();
+              const buttons = Array.from(
+                event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
+                  '[role="tab"]',
+                ),
+              );
+              const current = buttons.indexOf(event.currentTarget);
+              const next =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? buttons.length - 1
+                    : (current +
+                        (event.key === "ArrowRight" ? 1 : -1) +
+                        buttons.length) %
+                      buttons.length;
+              buttons[next].click();
+              buttons[next].focus();
+            }}
           >
             {t.label}
           </button>
         ))}
       </div>
-      <ErrorText>{error}</ErrorText>
-      {tab === "overview" && (
-        <div className="form-stack detail-form">
-          <div className="form-row">
+      <div
+        role="tabpanel"
+        id={`wish-panel-${item.id}`}
+        aria-labelledby={`wish-tab-${item.id}-${tab}`}
+        tabIndex={0}
+      >
+        <ErrorText>{error}</ErrorText>
+        {tab === "overview" && (
+          <form
+            className="form-stack detail-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <div className="form-row">
+              <label>
+                Status
+                <select
+                  value={status}
+                  disabled={!canEdit}
+                  onChange={(e) => setStatus(e.target.value as Item["status"])}
+                >
+                  {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                    <option value={v} key={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Priority
+                <select
+                  value={priority}
+                  disabled={!canEdit}
+                  onChange={(e) =>
+                    setPriority(e.target.value as Item["priority"])
+                  }
+                >
+                  <option value="high">Must-have</option>
+                  <option value="medium">Would love</option>
+                  <option value="low">Someday</option>
+                </select>
+              </label>
+            </div>
             <label>
-              Status
-              <select
-                value={item.status}
-                disabled={!canEdit}
-                onChange={(e) =>
-                  onUpdate({ status: e.target.value as Item["status"] })
-                }
-              >
-                {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                  <option value={v} key={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Priority
-              <select
-                value={item.priority}
-                disabled={!canEdit}
-                onChange={(e) =>
-                  onUpdate({ priority: e.target.value as Item["priority"] })
-                }
-              >
-                <option value="high">Must have</option>
-                <option value="medium">Would love</option>
-                <option value="low">Someday</option>
-              </select>
-            </label>
-          </div>
-          <label>
-            Product name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!canEdit}
-              maxLength={240}
-              required
-            />
-          </label>
-          <label>
-            Variant / size / color
-            <input
-              value={variant}
-              onChange={(e) => setVariant(e.target.value)}
-              disabled={!canEdit}
-              maxLength={200}
-            />
-          </label>
-          <label>
-            Product link
-            <input
-              type="url"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              disabled={!canEdit}
-            />
-          </label>
-          <div className="form-row">
-            <label>
-              My happy price ({item.currency})
+              Product name
               <input
-                type="number"
-                min="0"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 disabled={!canEdit}
-                placeholder="Set a target"
+                maxLength={240}
+                required
               />
             </label>
             <label>
-              Target date
+              Variant / size / color
               <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                value={variant}
+                onChange={(e) => setVariant(e.target.value)}
+                disabled={!canEdit}
+                maxLength={200}
+              />
+            </label>
+            <label>
+              Product link
+              <input
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
                 disabled={!canEdit}
               />
             </label>
-          </div>
-          {item.target_price != null &&
-            currentPrice(item) != null &&
-            currentPrice(item)! <= item.target_price && (
-              <p className="notice success">
-                <Check size={16} />
-                Your saved price is at or below your target.
-              </p>
+            <div className="form-row">
+              <label>
+                My happy price ({item.currency})
+                <input
+                  type="number"
+                  min="0"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  disabled={!canEdit}
+                  placeholder="Set a target"
+                />
+              </label>
+              <label>
+                Target date
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  disabled={!canEdit}
+                />
+              </label>
+            </div>
+            {item.target_price != null &&
+              currentPrice(item) != null &&
+              currentPrice(item)! <= item.target_price && (
+                <p className="notice success">
+                  <Check size={16} />
+                  Your saved price is at or below your target.
+                </p>
+              )}
+            <label className="watch-option">
+              <input
+                type="checkbox"
+                checked={tracking}
+                disabled={isDemo || !canEdit || !item.product_url}
+                onChange={(e) => setTracking(e.target.checked)}
+              />
+              <span>
+                Include in scheduled price watch
+                <small>
+                  {isDemo
+                    ? "Sign in to enable scheduled tracking."
+                    : !item.product_url
+                      ? "Add a product link to enable tracking."
+                      : !canEdit
+                        ? "Only editors can change tracking."
+                        : "Requires a configured tracking worker. On-demand checks remain available for supported pages."}
+                </small>
+              </span>
+            </label>
+            <label>
+              Notes
+              <textarea
+                rows={3}
+                value={notes}
+                maxLength={2000}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={!canEdit}
+                placeholder="Why you love it, size, or a reminder…"
+              />
+            </label>
+            {item.product_code && (
+              <p className="form-footnote">Product code: {item.product_code}</p>
             )}
-          <label className="watch-option">
-            <input
-              type="checkbox"
-              checked={item.tracking_enabled ?? false}
-              disabled={isDemo || !canEdit || !item.product_url}
-              onChange={(e) => onUpdate({ tracking_enabled: e.target.checked })}
-            />
-            <span>
-              Include in scheduled price watch
-              <small>
-                Requires a configured tracking worker. On-demand checks are
-                always available for supported pages.
-              </small>
-            </span>
-          </label>
-          <label>
-            Little details
-            <textarea
-              rows={3}
-              value={notes}
-              maxLength={2000}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={!canEdit}
-              placeholder="Why you love it, size, or a reminder…"
-            />
-          </label>
-          {item.product_code && (
-            <p className="form-footnote">Product code: {item.product_code}</p>
-          )}
-          {canEdit && (
-            <button
-              className="btn primary"
-              onClick={save}
-              disabled={busy || !name.trim() || Number(target) < 0}
-            >
-              Save changes
-              <Check size={16} />
-            </button>
-          )}
-          <p className="form-footnote">
-            <ShieldCheck size={13} /> Source:{" "}
-            {item.extraction_source?.replaceAll("_", " ") || "Manually added"}.
-            Shared library members can see these details.
-          </p>
-          {canEdit && (
-            <div className="danger-zone">
-              {confirmDelete ? (
-                <>
-                  <p>Remove this wish and its price history?</p>
-                  <button
-                    className="btn danger"
-                    disabled={deleting}
-                    onClick={remove}
-                  >
-                    {deleting ? "Removing…" : "Yes, remove wish"}
-                  </button>
-                  <button
-                    className="text-btn"
-                    onClick={() => setConfirmDelete(false)}
-                  >
-                    Keep it
-                  </button>
-                </>
-              ) : (
+            <p className="form-footnote">
+              <ShieldCheck size={13} /> Source:{" "}
+              {item.extraction_source?.startsWith("on_device_ocr")
+                ? "Screenshot OCR"
+                : item.extraction_source?.replaceAll("_", " ") ||
+                  "Manually added"}
+              . Members of this space can see these details.
+            </p>
+            {canEdit && (
+              <div className="danger-zone">
                 <button
+                  type="button"
                   className="text-btn danger-text"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={16} />
                   Remove this wish
+                </button>
+              </div>
+            )}
+            {canEdit && dirty && (
+              <div className="save-bar">
+                <span>Unsaved changes</span>
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={busy}
+                  onClick={discard}
+                >
+                  Discard
+                </button>
+                <button
+                  type="submit"
+                  className="btn primary"
+                  disabled={busy || !name.trim() || Number(target) < 0}
+                >
+                  {busy ? "Saving…" : "Save changes"}
+                  <Check size={16} />
+                </button>
+              </div>
+            )}
+          </form>
+        )}
+        {tab === "history" && (
+          <div className="detail-section">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">THE LONG GAME</span>
+                <h3>Good things come to those who watch.</h3>
+              </div>
+            </div>
+            <div className="history-summary">
+              <div>
+                <span>When saved</span>
+                <strong>{money(item.initial_price, item.currency)}</strong>
+              </div>
+              <div>
+                <span>Change since saving</span>
+                <strong className={drop > 0 ? "green-text" : ""}>
+                  {drop > 0
+                    ? `−${money(drop, item.currency)}`
+                    : "No recorded drop"}
+                </strong>
+              </div>
+            </div>
+            <HistoryChart item={item} />
+            <div className="history-list">
+              {[...item.price_observations]
+                .sort(
+                  (a, b) =>
+                    Date.parse(b.observed_at) - Date.parse(a.observed_at),
+                )
+                .map((p) => (
+                  <div key={p.id}>
+                    <span>
+                      {new Date(p.observed_at).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                      <small>
+                        {p.source.replaceAll("_", " ")} ·{" "}
+                        {p.availability.replaceAll("_", " ")}
+                      </small>
+                    </span>
+                    <strong>{money(p.price, p.currency)}</strong>
+                  </div>
+                ))}
+            </div>
+            <p className="notice">
+              Tracking begins when you save a product. Prices are observations,
+              not a guarantee of checkout price or historical retailer lows.
+            </p>
+          </div>
+        )}
+        {tab === "compare" && (
+          <div className="detail-section">
+            <span className="eyebrow">SAME WISH. MORE POSSIBILITIES.</span>
+            <h3>Find it around the web.</h3>
+            <p className="muted">
+              Always compare the same model, color, size, seller, and delivery
+              costs.
+            </p>
+            <button
+              className="btn primary full"
+              onClick={searchOffers}
+              disabled={offerBusy}
+            >
+              {offerBusy ? (
+                <LoaderCircle size={16} className="spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+              Find store matches
+            </button>
+            {offerMessage && <p className="notice">{offerMessage}</p>}
+            {offers.map((o, i) => (
+              <a
+                key={i}
+                href={o.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="offer-card"
+              >
+                <ProductImage src={o.image} name={o.title} />
+                <div>
+                  <span>{o.retailer}</span>
+                  <strong>{o.title}</strong>
+                  <b>{o.price != null ? money(o.price) : "View store price"}</b>
+                </div>
+                <ExternalLink size={15} />
+              </a>
+            ))}
+            <div className="retailer-searches">
+              {[
+                { name: "Amazon", url: `https://www.amazon.in/s?k=${query}` },
+                {
+                  name: "Flipkart",
+                  url: `https://www.flipkart.com/search?q=${query}`,
+                },
+                {
+                  name: "Myntra",
+                  url: `https://www.myntra.com/${encodeURIComponent(item.product_name.replaceAll(" ", "-"))}`,
+                },
+                {
+                  name: "Google Shopping",
+                  url: `https://www.google.com/search?tbm=shop&q=${query}`,
+                },
+              ].map((s) => (
+                <a
+                  key={s.name}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>Search {s.name}</span>
+                  <ArrowUpRight size={17} />
+                </a>
+              ))}
+            </div>
+            <p className="form-footnote">
+              Search links are discovery options, not confirmed offers or stock
+              availability.
+            </p>
+          </div>
+        )}
+        {tab === "notes" && (
+          <div className="detail-section">
+            <div className="section-heading">
+              <h3>
+                <MessageCircle size={18} />
+                Talk about this wish
+              </h3>
+              {comments.some((message) => message.user_id === userId) && (
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => setDeleteMessage("all")}
+                >
+                  <Trash2 size={15} />
+                  Clear my messages
                 </button>
               )}
             </div>
-          )}
-        </div>
-      )}
-      {tab === "history" && (
-        <div className="detail-section">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">THE LONG GAME</span>
-              <h3>Good things come to those who watch.</h3>
-            </div>
-          </div>
-          <div className="history-summary">
-            <div>
-              <span>When saved</span>
-              <strong>{money(item.initial_price, item.currency)}</strong>
-            </div>
-            <div>
-              <span>Change since saving</span>
-              <strong className={drop > 0 ? "green-text" : ""}>
-                {drop > 0
-                  ? `−${money(drop, item.currency)}`
-                  : "No recorded drop"}
-              </strong>
-            </div>
-          </div>
-          <HistoryChart item={item} />
-          <div className="history-list">
-            {[...item.price_observations]
-              .sort(
-                (a, b) => Date.parse(b.observed_at) - Date.parse(a.observed_at),
-              )
-              .map((p) => (
-                <div key={p.id}>
-                  <span>
-                    {new Date(p.observed_at).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                    <small>
-                      {p.source.replaceAll("_", " ")} ·{" "}
-                      {p.availability.replaceAll("_", " ")}
-                    </small>
-                  </span>
-                  <strong>{money(p.price, p.currency)}</strong>
-                </div>
-              ))}
-          </div>
-          <p className="notice">
-            Tracking begins when you save a product. Prices are observations,
-            not a guarantee of checkout price or historical retailer lows.
-          </p>
-        </div>
-      )}
-      {tab === "compare" && (
-        <div className="detail-section">
-          <span className="eyebrow">SAME WISH. MORE POSSIBILITIES.</span>
-          <h3>Find it around the web.</h3>
-          <p className="muted">
-            Always compare the same model, color, size, seller, and delivery
-            costs.
-          </p>
-          <button
-            className="btn primary full"
-            onClick={searchOffers}
-            disabled={offerBusy}
-          >
-            {offerBusy ? (
-              <LoaderCircle size={16} className="spin" />
+            <p className="muted">A little context for you and your people.</p>
+            {commentsLoading ? (
+              <p>Loading conversation…</p>
+            ) : comments.length === 0 ? (
+              <div className="comments-empty">
+                No thoughts yet. Start the conversation.
+              </div>
             ) : (
-              <Sparkles size={16} />
-            )}
-            Find store matches
-          </button>
-          {offerMessage && <p className="notice">{offerMessage}</p>}
-          {offers.map((o, i) => (
-            <a
-              key={i}
-              href={o.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="offer-card"
-            >
-              <ProductImage src={o.image} name={o.title} />
-              <div>
-                <span>{o.retailer}</span>
-                <strong>{o.title}</strong>
-                <b>{o.price != null ? money(o.price) : "View store price"}</b>
-              </div>
-              <ExternalLink size={15} />
-            </a>
-          ))}
-          <div className="retailer-searches">
-            {[
-              { name: "Amazon", url: `https://www.amazon.in/s?k=${query}` },
-              {
-                name: "Flipkart",
-                url: `https://www.flipkart.com/search?q=${query}`,
-              },
-              {
-                name: "Myntra",
-                url: `https://www.myntra.com/${encodeURIComponent(item.product_name.replaceAll(" ", "-"))}`,
-              },
-              {
-                name: "Google Shopping",
-                url: `https://www.google.com/search?tbm=shop&q=${query}`,
-              },
-            ].map((s) => (
-              <a
-                key={s.name}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>Search {s.name}</span>
-                <ArrowUpRight size={17} />
-              </a>
-            ))}
-          </div>
-          <p className="form-footnote">
-            Search links are discovery options, not confirmed offers or stock
-            availability.
-          </p>
-        </div>
-      )}
-      {tab === "notes" && (
-        <div className="detail-section">
-          <div className="section-heading">
-            <h3>
-              <MessageCircle size={18} />
-              Talk about this wish
-            </h3>
-            {comments.some((message) => message.user_id === userId) && (
-              <button
-                type="button"
-                className="text-btn"
-                onClick={() => setDeleteMessage("all")}
-              >
-                <Trash2 size={15} />
-                Clear my messages
-              </button>
-            )}
-          </div>
-          <p className="muted">A little context for you and your people.</p>
-          {deleteMessage && (
-            <div className="notice" role="alert">
-              <p>
-                {deleteMessage === "all"
-                  ? "Delete all your messages in this product conversation?"
-                  : "Delete this message?"}{" "}
-                This cannot be undone.
-              </p>
-              <button
-                type="button"
-                className="btn danger"
-                disabled={commentBusy}
-                onClick={removeMessages}
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                className="btn secondary"
-                disabled={commentBusy}
-                onClick={() => setDeleteMessage(null)}
-              >
-                Keep
-              </button>
-            </div>
-          )}
-          {commentsLoading ? (
-            <p>Loading conversation…</p>
-          ) : comments.length === 0 ? (
-            <div className="comments-empty">
-              No thoughts yet. Start the conversation.
-            </div>
-          ) : (
-            comments.map((c) => (
-              <div className="comment" key={c.id}>
-                <Avatar
-                  name={c.profile?.display_name || "Member"}
-                  size="small"
-                />
-                <div>
-                  <strong>{c.profile?.display_name || "Member"}</strong>
-                  <small>
-                    {new Date(c.created_at).toLocaleDateString("en-IN")}
-                  </small>
-                  <p>{c.body}</p>
-                  {c.user_id === userId && (
-                    <button
-                      className="text-btn"
-                      type="button"
-                      aria-label="Delete this message"
-                      onClick={() => setDeleteMessage(c.id)}
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </button>
-                  )}
+              comments.map((c) => (
+                <div className="comment" key={c.id}>
+                  <Avatar
+                    name={c.profile?.display_name || "Member"}
+                    size="small"
+                  />
+                  <div>
+                    <strong>{c.profile?.display_name || "Member"}</strong>
+                    <small>
+                      {new Date(c.created_at).toLocaleDateString("en-IN")}
+                    </small>
+                    <p>{c.body}</p>
+                    {c.user_id === userId && (
+                      <button
+                        className="text-btn"
+                        type="button"
+                        aria-label="Delete this message"
+                        onClick={() => setDeleteMessage(c.id)}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-          <form
-            className="comment-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              addComment();
-            }}
-          >
-            <input
-              maxLength={2000}
-              placeholder="Love this one? Leave a thought…"
-              aria-label="Comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-            <button
-              className="icon-btn accent"
-              type="submit"
-              disabled={!comment.trim() || commentBusy}
-              aria-label="Send comment"
+              ))
+            )}
+            <form
+              className="comment-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                addComment();
+              }}
             >
-              <Send size={18} />
-            </button>
-          </form>
-        </div>
-      )}
+              <input
+                disabled={isDemo}
+                maxLength={2000}
+                placeholder="Love this one? Leave a thought…"
+                aria-label="Comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+              <button
+                className="icon-btn accent"
+                type="submit"
+                disabled={!comment.trim() || commentBusy}
+                aria-label="Send comment"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+            {isDemo && (
+              <p className="form-footnote">
+                Sign in to add and save messages. Guest conversations are not
+                stored.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={remove}
+        title="Remove this wish?"
+        description="This removes the wish, its recorded prices, screenshots, and conversation. This cannot be undone."
+        confirmLabel="Remove wish"
+        busy={deleting}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteMessage)}
+        onClose={() => setDeleteMessage(null)}
+        onConfirm={removeMessages}
+        title={
+          deleteMessage === "all"
+            ? "Clear your messages?"
+            : "Delete this message?"
+        }
+        description={
+          deleteMessage === "all"
+            ? "Only your messages in this wish’s conversation will be deleted. This cannot be undone."
+            : "This message will be deleted permanently."
+        }
+        confirmLabel={
+          deleteMessage === "all" ? "Clear my messages" : "Delete message"
+        }
+        busy={commentBusy}
+      />
+      <ConfirmDialog
+        open={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        onConfirm={() => {
+          discard();
+          setConfirmDiscard(false);
+          onClose();
+        }}
+        title="Discard unsaved changes?"
+        description="Your edits to this wish haven’t been saved."
+        confirmLabel="Discard changes"
+      />
     </Modal>
   );
 }

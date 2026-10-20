@@ -211,10 +211,10 @@ export default function AuthDialog({
           {busy
             ? "One moment…"
             : mode === "signup"
-              ? "Create my shelf"
+              ? "Create account"
               : mode === "reset"
                 ? "Send reset link"
-                : "Step into my shelf"}
+                : "Sign in"}
           <ArrowRight size={17} />
         </button>
         {mode === "login" && (
@@ -228,8 +228,8 @@ export default function AuthDialog({
           </button>
         )}
         <p className="form-footnote">
-          Your personal library is private. Only the people you invite can
-          access your shared libraries.
+          Your shelf is private. Only the people you invite can access your
+          spaces.
         </p>
       </form>
     </Modal>

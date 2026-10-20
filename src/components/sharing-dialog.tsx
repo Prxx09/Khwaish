@@ -110,7 +110,7 @@ export default function SharingDialog({
       await onCreate(name.trim());
       setName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create library.");
+      setError(e instanceof Error ? e.message : "Could not create space.");
     } finally {
       setBusy(false);
     }
@@ -190,7 +190,7 @@ export default function SharingDialog({
       subtitle={
         library
           ? "Your shared space, your rules."
-          : "Create a shared shelf for a friend, a flat, or your next big plan."
+          : "Create a space for a friend, a flat, or your next big plan."
       }
     >
       {!library ? (

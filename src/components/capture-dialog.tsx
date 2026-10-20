@@ -213,7 +213,7 @@ export default function CaptureDialog({
       }));
       setNotice(
         [
-          "Groq structured the OCR text. Review all fields; extra details are in Notes.",
+          "AI structured the OCR text. Review all fields; extra details are in Notes.",
           ...product.warnings,
         ].join(" "),
       );
@@ -376,7 +376,7 @@ export default function CaptureDialog({
       onClose={() => {
         if (!saving) onClose();
       }}
-      title="Found something you love?"
+      title="Add a wish"
       subtitle="Drop it here. Your future self will thank you."
       wide
     >
@@ -418,7 +418,7 @@ export default function CaptureDialog({
             />
           </div>
           <button
-            className="btn primary"
+            className={ready ? "btn secondary" : "btn primary"}
             disabled={!url || busy}
             onClick={extractLink}
           >
@@ -441,10 +441,10 @@ export default function CaptureDialog({
               onChange={(event) => setUseAi(event.target.checked)}
             />
             <span>
-              Structure all recognized text with Groq
+              Use AI to fill the product fields
               <p>
-                The image is read on your device. Recognized text is sent to
-                Groq to fill product fields.{" "}
+                The image is read on your device. Recognized text is sent to the
+                AI service to fill product fields.{" "}
                 {isDemo
                   ? "Sign in to enable AI."
                   : "Turn off for local-only extraction."}
@@ -477,14 +477,21 @@ export default function CaptureDialog({
             </span>
             <strong>
               {aiBusy
-                ? "Structuring product details with Groq…"
+                ? "Structuring product details with AI…"
                 : busy
                   ? `Reading on your device… ${progress}%`
                   : "Drop a screenshot, or tap to choose"}
             </strong>
             <span>JPG, PNG, WebP · up to 10 MB · local OCR first</span>
             {busy && (
-              <div className="progress">
+              <div
+                className="progress"
+                role="progressbar"
+                aria-label="Recognizing screenshot text"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
                 <span style={{ width: `${progress}%` }} />
               </div>
             )}
@@ -516,7 +523,7 @@ export default function CaptureDialog({
           onClick={() => structureText(ocrText)}
         >
           <Sparkles size={16} />
-          {aiBusy ? "Structuring…" : "Structure OCR text with Groq"}
+          {aiBusy ? "Structuring…" : "Structure OCR text with AI"}
         </button>
       )}
       {notice && (
@@ -597,7 +604,7 @@ export default function CaptureDialog({
                 >
                   {libraries.map((l) => (
                     <option key={l.id} value={l.id}>
-                      {l.name}
+                      {l.kind === "personal" ? "My shelf" : l.name}
                     </option>
                   ))}
                 </select>
@@ -623,7 +630,7 @@ export default function CaptureDialog({
                     field("priority", e.target.value as Draft["priority"])
                   }
                 >
-                  <option value="high">Must have</option>
+                  <option value="high">Must-have</option>
                   <option value="medium">Would love</option>
                   <option value="low">Someday</option>
                 </select>
@@ -728,7 +735,7 @@ export default function CaptureDialog({
               ) : (
                 <Sparkles size={17} />
               )}{" "}
-              {saving ? "Saving your wish…" : "Add to my wishlist"}
+              {saving ? "Saving your wish…" : "Add a wish"}
               <ArrowRight size={16} />
             </button>
           </div>
