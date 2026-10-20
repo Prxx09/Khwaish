@@ -119,29 +119,7 @@ export default function Workspace() {
   const [pendingQuestion, setPendingQuestion] = useState("");
   const [queryBusy, setQueryBusy] = useState(false);
   const queryVersion = useRef(0);
-  const chatPageRef = useRef<HTMLElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (view !== "ask") return;
-    const resize = () => {
-      const page = chatPageRef.current;
-      if (!page) return;
-      const nav = document.querySelector(".mobile-nav");
-      const navHeight = nav ? nav.getBoundingClientRect().height : 0;
-      const viewport = window.visualViewport;
-      const bottom = viewport
-        ? viewport.height + viewport.offsetTop
-        : window.innerHeight;
-      page.style.height = `${Math.max(280, bottom - page.getBoundingClientRect().top - navHeight - 12)}px`;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    window.visualViewport?.addEventListener("resize", resize);
-    return () => {
-      window.removeEventListener("resize", resize);
-      window.visualViewport?.removeEventListener("resize", resize);
-    };
-  }, [view, authReady, user]);
   useEffect(() => {
     if (view !== "ask") return;
     const scroll = chatScrollRef.current;
@@ -179,6 +157,41 @@ export default function Workspace() {
   const personal = libraries.find((l) => l.kind === "personal");
   const shared = libraries.filter((l) => l.kind === "shared");
   const selected = items.find((i) => i.id === selectedId);
+  const chatScopeItems =
+    queryScope === "all"
+      ? items
+      : items.filter((i) => i.library_id === queryScope);
+  const chatSuggestions = (() => {
+    if (!chatScopeItems.length) return [];
+    const prompts: string[] = [];
+    const categories = [
+      ...new Set(chatScopeItems.map((i) => i.category).filter(Boolean)),
+    ];
+    const category = categories[0];
+    const priced = chatScopeItems
+      .filter(
+        (i) =>
+          i.category === category &&
+          i.currency.trim() === "INR" &&
+          currentPrice(i) != null,
+      )
+      .map((i) => currentPrice(i)!)
+      .sort((a, b) => a - b);
+    if (category)
+      prompts.push(
+        priced.length
+          ? `Show ${category.toLowerCase()} under ₹${Math.ceil((priced[Math.floor(priced.length / 2)] + 1) / 500) * 500}`
+          : `Show ${category.toLowerCase()}`,
+      );
+    if (chatScopeItems.some((i) => priceDrop(i) > 0))
+      prompts.push("What got cheaper?");
+    if (chatScopeItems.some((i) => i.priority === "high"))
+      prompts.push("Show my must-haves");
+    prompts.push("What is the total cost?");
+    if (categories.length > 1)
+      prompts.push(`Show ${categories[1]!.toLowerCase()}`);
+    return prompts.slice(0, 4);
+  })();
   const selectedRole = isDemo
     ? "owner"
     : memberships.find(
@@ -1572,14 +1585,10 @@ export default function Workspace() {
             </>
           )}
           {view === "ask" && (
-            <section
-              className="chat-page"
-              aria-label="Ask Khwaish"
-              ref={chatPageRef}
-            >
+            <section className="chat-page" aria-label="Ask Khwaish">
               <header className="chat-header">
                 <h1>
-                  <Sparkles size={20} /> Ask Khwaish
+                  Ask <em>Khwaish.</em>
                 </h1>
                 <div className="query-scope">
                   <button
@@ -1599,7 +1608,7 @@ export default function Workspace() {
                   </button>
                   <span>Look in</span>
                   <select
-                    aria-label="Query library"
+                    aria-label="Query shelf or space"
                     value={queryScope}
                     onChange={(e) => {
                       setQueryScope(e.target.value);
@@ -1607,10 +1616,10 @@ export default function Workspace() {
                       setQueryBusy(false);
                     }}
                   >
-                    <option value="all">All my libraries</option>
+                    <option value="all">My shelf + all spaces</option>
                     {libraries.map((l) => (
                       <option key={l.id} value={l.id}>
-                        {l.name}
+                        {l.kind === "personal" ? "My shelf" : l.name}
                       </option>
                     ))}
                   </select>
@@ -1641,7 +1650,7 @@ export default function Workspace() {
                             <Sparkles size={17} />
                             <strong>Khwaish</strong>
                             <small>
-                              {turn.mode === "ai" ? "Groq" : "Local search"}
+                              {turn.mode === "ai" ? "AI" : "Local match"}
                             </small>
                           </div>
                           <p className="chat-answer-text">
@@ -1713,18 +1722,18 @@ export default function Workspace() {
                 ) : (
                   <div className="chat-welcome">
                     <Sparkles size={32} aria-hidden="true" />
-                    <h2>What’s on your wishlist?</h2>
+                    <h2>
+                      {chatScopeItems.length
+                        ? "What’s on your mind?"
+                        : "Your wishes start the conversation."}
+                    </h2>
                     <p>
-                      Find a wish, compare saved prices, or plan your next
-                      purchase.
+                      {chatScopeItems.length
+                        ? "Find a wish, compare recorded prices, or plan your next purchase."
+                        : "Add a wish to your shelf or choose a space with saved wishes, then ask about it here."}
                     </p>
                     <div className="query-prompts">
-                      {[
-                        "What got cheaper?",
-                        "Show high priority items",
-                        "What is the total cost?",
-                        "Show electronics under ₹5,000",
-                      ].map((p) => (
+                      {chatSuggestions.map((p) => (
                         <button
                           disabled={queryBusy}
                           onClick={() => runQuery(p)}
@@ -1752,7 +1761,11 @@ export default function Workspace() {
                     onChange={(e) => setQuery(e.target.value)}
                     maxLength={500}
                     aria-label="Ask your wishlist"
-                    placeholder="Show me electronics under ₹10,000…"
+                    placeholder={
+                      chatSuggestions[0]
+                        ? `${chatSuggestions[0]}…`
+                        : "Ask about your saved wishes…"
+                    }
                   />
                   <button
                     className="icon-btn accent"
