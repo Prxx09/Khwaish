@@ -1132,277 +1132,248 @@ export default function Workspace() {
           )}
           {(view === "shelf" || view === "watch") && (
             <>
-              {view === "shelf" ? (
-                <section className="hero">
-                  <div className="hero-copy">
-                    <span className="eyebrow">
-                      <span /> SAVE IT. DREAM IT. MAYBE BUY IT.
-                    </span>
-                    <h1>
-                      Big dreams.
-                      <br />
-                      Little <em>wishlist.</em>
-                      <span className="hero-star">✳</span>
-                    </h1>
-                    <p>
-                      A little space for everything that makes you go
-                      <br className="desktop-break" /> “okay, I need that.”
-                    </p>
-                    <button
-                      className="btn hero-btn"
-                      onClick={() => setCaptureOpen(true)}
-                      disabled={!canEdit}
-                    >
-                      <Plus size={18} />
-                      Add a little wish
-                      <ArrowUpRight size={16} />
-                    </button>
-                  </div>
-                  <div className="hero-art" aria-hidden="true">
-                    <span className="orbit orbit-1" />
-                    <span className="orbit orbit-2" />
-                    <div className="float-note note-top">
-                      <span>✦</span> Your next favourite
-                    </div>
-                    <div className="hero-card card-back">
-                      <Heart size={37} fill="currentColor" />
-                      <span>for the plot.</span>
-                    </div>
-                    <div className="hero-card card-front">
-                      <span className="hero-card-mini">THE WANT LIST</span>
-                      <span className="hero-spark">✳</span>
-                      <strong>
-                        good
-                        <br />
-                        things
-                        <br />
-                        <em>ahead.</em>
-                      </strong>
-                      <div>
-                        <span>CURATED BY YOU</span>
-                        <ArrowUpRight size={16} />
-                      </div>
-                    </div>
-                    <div className="float-note note-bottom">
-                      <span className="note-circle">
-                        <Check size={12} />
-                      </span>{" "}
-                      Saved for someday. Or today.
-                    </div>
-                    <span className="hero-dot dot-1" />
-                    <span className="hero-dot dot-2" />
-                    <span className="hero-doodle">↗</span>
-                  </div>
-                </section>
-              ) : (
-                <section className="page-heading watch-heading">
+              <section className="shelf-heading">
+                <div>
                   <span className="eyebrow">
-                    <span className="live-dot" /> KEEP AN EYE ON THE GOOD STUFF
+                    {view === "watch"
+                      ? "ACROSS ALL YOUR SPACES"
+                      : activeLibrary?.kind === "shared"
+                        ? "SHARED SPACE"
+                        : "CURATED BY YOU"}
                   </span>
                   <h1>
-                    Same wish.
-                    <br />
-                    <em>Better price.</em>
+                    {view === "watch" ? (
+                      <>
+                        Better <em>prices.</em>
+                      </>
+                    ) : activeLibrary?.kind === "shared" ? (
+                      activeLibrary.name
+                    ) : (
+                      <>
+                        Your shelf, <em>your taste.</em>
+                      </>
+                    )}
                   </h1>
                   <p>
-                    Your saved prices, price drops, and happy-price goals—in one
-                    place.
+                    {view === "watch"
+                      ? "Saved prices, recorded drops, and target prices."
+                      : "Save what catches your eye. Come back when the time feels right."}
                   </p>
-                </section>
-              )}
-              <section className="stats-grid" aria-label="Wishlist overview">
-                <div className="stat">
-                  <span className="stat-icon lavender">
-                    <Heart size={19} />
-                  </span>
-                  <div>
-                    <span>Wishes on this shelf</span>
-                    <strong>
-                      {scopeItems.length}
-                      <small>little possibilities</small>
-                    </strong>
-                  </div>
                 </div>
-                <div className="stat">
-                  <span className="stat-icon mint">
-                    <TrendingDown size={19} />
-                  </span>
-                  <div>
-                    <span>Recorded price drops</span>
-                    <strong>
-                      {money(savings)}
-                      <small>
-                        {scopeItems.filter((i) => priceDrop(i) > 0).length}{" "}
-                        finds got cheaper
-                      </small>
-                    </strong>
-                  </div>
-                </div>
-                <div className="stat">
-                  <span className="stat-icon peach">
-                    <Zap size={19} />
-                  </span>
-                  <div>
-                    <span>Shelf value · INR</span>
-                    <strong>
-                      {money(value)}
-                      <small>based on saved prices</small>
-                    </strong>
-                  </div>
+                <div className="section-actions">
+                  {activeLibrary?.kind === "shared" && view === "shelf" && (
+                    <button
+                      className="btn secondary"
+                      onClick={() => {
+                        setShareLibrary(activeLibrary);
+                        setShareOpen(true);
+                      }}
+                    >
+                      <Users size={18} />
+                      People
+                    </button>
+                  )}
+                  <button
+                    className="btn primary"
+                    onClick={() => setCaptureOpen(true)}
+                    disabled={!canEdit}
+                  >
+                    <Plus size={18} />
+                    Add a wish
+                  </button>
                 </div>
               </section>
-              <section className="shelf-section">
-                <div className="section-heading">
-                  <div>
-                    <div className="title-with-icon">
-                      <h2>
-                        {view === "watch"
-                          ? "Your price watch"
-                          : activeLibrary?.kind === "shared"
-                            ? activeLibrary.name
-                            : "The want list"}
-                      </h2>
-                      <span className="count-badge">{scopeItems.length}</span>
-                      {activeLibrary?.kind === "shared" && (
-                        <span className="shared-label">
-                          <Users size={13} />
-                          Shared
-                        </span>
-                      )}
-                    </div>
-                    <p>
-                      {view === "watch"
-                        ? "Price checks run when you ask. Store access and data availability may vary."
-                        : activeLibrary?.kind === "shared"
-                          ? "Good finds, shared with your people."
-                          : "A collection of things you’re a little obsessed with."}
-                    </p>
-                  </div>
-                  <div className="section-actions">
-                    {activeLibrary?.kind === "shared" && view === "shelf" && (
-                      <button
-                        className="btn secondary"
-                        onClick={() => {
-                          setShareLibrary(activeLibrary);
-                          setShareOpen(true);
-                        }}
-                      >
-                        <Users size={16} />
-                        People
-                      </button>
-                    )}
-                    <button
-                      className="icon-btn export-btn"
-                      onClick={exportCsv}
-                      aria-label="Export wishlist as CSV"
-                    >
-                      <Download size={17} />
-                    </button>
-                    <button
-                      className="btn primary"
-                      onClick={() => setCaptureOpen(true)}
-                      disabled={!canEdit}
-                    >
-                      <Plus size={17} />
-                      Add a wish
-                    </button>
-                  </div>
-                </div>
-                <div className="filter-bar">
-                  <div className="search-input">
-                    <Search size={17} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Find something on your shelf…"
-                      aria-label="Search wishlist"
-                    />
-                    {search && (
-                      <button
-                        className="mini-icon"
-                        onClick={() => setSearch("")}
-                        aria-label="Clear search"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
+              {view === "shelf" && (
+                <div className="space-switcher">
+                  <label htmlFor="shelf-scope">Browsing</label>
                   <select
-                    aria-label="Filter status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    id="shelf-scope"
+                    value={activeId}
+                    onChange={(e) => go("shelf", e.target.value)}
                   >
-                    <option value="all">All statuses</option>
-                    {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
+                    {libraries.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.kind === "personal" ? "My shelf" : l.name}
                       </option>
                     ))}
                   </select>
-                  <select
-                    aria-label="Filter priority"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
+                  <button
+                    className="text-btn"
+                    onClick={() => {
+                      setShareLibrary(undefined);
+                      setShareOpen(true);
+                    }}
+                    aria-label="Create a shared space"
                   >
-                    <option value="all">All priorities</option>
-                    <option value="high">Must-haves</option>
-                    <option value="medium">Would love</option>
-                    <option value="low">Someday</option>
-                  </select>
-                  <select
-                    aria-label="Sort wishlist"
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                  >
-                    <option value="newest">Recently added</option>
-                    <option value="price-low">
-                      Price: low to high by currency
-                    </option>
-                    <option value="price-high">
-                      Price: high to low by currency
-                    </option>
-                    <option value="drop">Biggest price drops</option>
-                  </select>
-                  <div className="view-toggle">
-                    <button
-                      aria-label="Grid view"
-                      aria-pressed={layout === "grid"}
-                      className={layout === "grid" ? "active" : ""}
-                      onClick={() => setLayout("grid")}
+                    <Plus size={18} />
+                    <span>Create space</span>
+                  </button>
+                </div>
+              )}
+              <div
+                className="stats-strip"
+                aria-label={
+                  view === "watch"
+                    ? "Across all your spaces"
+                    : "Current shelf or space overview"
+                }
+              >
+                <span>
+                  <strong>{scopeItems.length}</strong> wishes
+                </span>
+                <span>
+                  <strong>{money(value)}</strong>{" "}
+                  {view === "watch"
+                    ? "across all your spaces · INR"
+                    : activeLibrary?.kind === "shared"
+                      ? "space value · INR"
+                      : "shelf value · INR"}
+                </span>
+                {savings > 0 && (
+                  <span className="green-text">
+                    <strong>{money(savings)}</strong> in recorded drops
+                  </span>
+                )}
+              </div>
+              <section className="shelf-section" aria-label="Wishes">
+                <div className="shelf-toolbar">
+                  <div className="filter-bar">
+                    <div className="search-input">
+                      <Search size={18} />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search wishes…"
+                        aria-label="Search wishes"
+                      />
+                      {search && (
+                        <button
+                          className="mini-icon"
+                          onClick={() => setSearch("")}
+                          aria-label="Clear search"
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+                    </div>
+                    <details className="filter-popover">
+                      <summary>
+                        <Settings2 size={18} />
+                        Filters
+                        {(status !== "all" || priority !== "all") && (
+                          <span className="count-badge">
+                            {Number(status !== "all") +
+                              Number(priority !== "all")}
+                          </span>
+                        )}
+                      </summary>
+                      <div className="filter-menu">
+                        <label>
+                          Status
+                          <select
+                            aria-label="Filter status"
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                          >
+                            <option value="all">All statuses</option>
+                            {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                              <option key={v} value={v}>
+                                {l}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Priority
+                          <select
+                            aria-label="Filter priority"
+                            value={priority}
+                            onChange={(e) => setPriority(e.target.value)}
+                          >
+                            <option value="all">All priorities</option>
+                            <option value="high">Must-have</option>
+                            <option value="medium">Would love</option>
+                            <option value="low">Someday</option>
+                          </select>
+                        </label>
+                        <button
+                          className="text-btn"
+                          onClick={() => {
+                            setStatus("all");
+                            setPriority("all");
+                          }}
+                        >
+                          Reset filters
+                        </button>
+                      </div>
+                    </details>
+                    <select
+                      aria-label="Sort wishes"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
                     >
-                      <Grid2X2 size={17} />
-                    </button>
+                      <option value="newest">Recently added</option>
+                      <option value="price-low">Price: low to high</option>
+                      <option value="price-high">Price: high to low</option>
+                      <option value="drop">Biggest price drops</option>
+                    </select>
+                    <div className="view-toggle" aria-label="Wish layout">
+                      <button
+                        aria-label="Grid view"
+                        aria-pressed={layout === "grid"}
+                        className={layout === "grid" ? "active" : ""}
+                        onClick={() => setLayout("grid")}
+                      >
+                        <Grid2X2 size={18} />
+                      </button>
+                      <button
+                        aria-label="List view"
+                        aria-pressed={layout === "list"}
+                        className={layout === "list" ? "active" : ""}
+                        onClick={() => setLayout("list")}
+                      >
+                        <List size={18} />
+                      </button>
+                    </div>
                     <button
-                      aria-label="List view"
-                      aria-pressed={layout === "list"}
-                      className={layout === "list" ? "active" : ""}
-                      onClick={() => setLayout("list")}
+                      className="btn secondary export-btn"
+                      onClick={exportCsv}
+                      aria-label="Export wishes as CSV"
+                      title="Export this shelf or space as CSV"
                     >
-                      <List size={17} />
+                      <Download size={18} />
+                      Export
                     </button>
                   </div>
-                </div>
-                <div className="category-tabs">
-                  <button
-                    className={category === "All" ? "active" : ""}
-                    onClick={() => setCategory("All")}
-                  >
-                    All wishes<span>{scopeItems.length}</span>
-                  </button>
-                  {CATEGORIES.filter((c) =>
-                    scopeItems.some((i) => i.category === c),
-                  ).map((c) => (
+                  <div className="category-tabs" aria-label="Wish categories">
                     <button
-                      key={c}
-                      className={category === c ? "active" : ""}
-                      onClick={() => setCategory(c)}
+                      className={category === "All" ? "active" : ""}
+                      aria-pressed={category === "All"}
+                      onClick={() => setCategory("All")}
                     >
-                      {c}
+                      All wishes<span>{scopeItems.length}</span>
                     </button>
-                  ))}
+                    {CATEGORIES.filter((c) =>
+                      scopeItems.some((i) => i.category === c),
+                    ).map((c) => (
+                      <button
+                        key={c}
+                        aria-pressed={category === c}
+                        className={category === c ? "active" : ""}
+                        onClick={() => setCategory(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 {loading || !authReady ? (
                   <Skeletons />
+                ) : loadError ? (
+                  <EmptyState
+                    title="Your wishes couldn’t load."
+                    body="Use Try again above to reconnect to your shelf."
+                  />
                 ) : visible.length ? (
                   <div
                     className={`product-grid ${layout === "list" ? "list-view" : ""}`}
@@ -1433,46 +1404,41 @@ export default function Workspace() {
                 ) : (
                   <EmptyState
                     title={
-                      search || category !== "All"
-                        ? "No wishes found. Yet."
-                        : "Your next favourite belongs here."
+                      search ||
+                      category !== "All" ||
+                      status !== "all" ||
+                      priority !== "all"
+                        ? "No wishes match just yet."
+                        : "Make room for your next favourite."
                     }
                     body={
-                      search || category !== "All"
-                        ? "Try a different search or clear your filters."
-                        : "Save a product link, upload a screenshot, or add a wish of your own."
+                      search ||
+                      category !== "All" ||
+                      status !== "all" ||
+                      priority !== "all"
+                        ? "Try another search or reset your filters."
+                        : "Paste a product link, use a screenshot, or add the details yourself."
                     }
                     action={
-                      <button
-                        className="btn primary"
-                        disabled={!canEdit}
-                        onClick={() => setCaptureOpen(true)}
-                      >
-                        <Plus size={17} />
-                        Add your first wish
-                      </button>
+                      search ||
+                      category !== "All" ||
+                      status !== "all" ||
+                      priority !== "all" ? (
+                        <button
+                          className="btn secondary"
+                          onClick={() => {
+                            setSearch("");
+                            setCategory("All");
+                            setStatus("all");
+                            setPriority("all");
+                          }}
+                        >
+                          Reset filters
+                        </button>
+                      ) : undefined
                     }
                   />
                 )}
-              </section>
-              <section className="ask-strip">
-                <span className="ask-strip-icon">
-                  <Sparkles size={23} />
-                </span>
-                <div>
-                  <h3>Your shelf has answers.</h3>
-                  <p>“Show my must-haves under ₹5,000”</p>
-                </div>
-                <button
-                  className="text-btn"
-                  onClick={() => {
-                    setView("ask");
-                    setQuery("Show my must-haves under ₹5,000");
-                  }}
-                >
-                  Ask Khwaish
-                  <ArrowRight size={18} />
-                </button>
               </section>
             </>
           )}

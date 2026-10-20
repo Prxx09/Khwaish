@@ -58,6 +58,13 @@ export default function ProductCard({
               : `Mark ${item.product_name} as a must-have`
           }
           aria-pressed={item.priority === "high"}
+          title={
+            !canEdit
+              ? "Only editors can change priority"
+              : item.priority === "high"
+                ? "Must-have — click to mark Would love"
+                : "Mark as Must-have"
+          }
         >
           <Heart
             size={17}
@@ -68,7 +75,7 @@ export default function ProductCard({
       <div className="product-card-body">
         <div className="card-meta">
           <span>{item.category || "Other"}</span>
-          <span className="store-dot">{item.retailer || "Your find"}</span>
+          <span className="store-dot">{item.retailer || "Saved wish"}</span>
         </div>
         <button className="product-title" onClick={onSelect}>
           {item.product_name}
