@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import { RefreshCw, Search, Download, ArrowUpRight } from "lucide-react";
+import { RefreshCw, Download, ArrowUpRight } from "lucide-react";
+import SearchField from "./search-field";
+import { createWishMatcher } from "./wish-search";
 import {
   currentPrice,
   latestPrice,
@@ -38,6 +40,7 @@ export default function PriceWatch({
 }) {
   const [segment, setSegment] = useState<string>("All");
   const [search, setSearch] = useState("");
+  const [smartSearch, setSmartSearch] = useState(true);
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [sort, setSort] = useState("drop");
@@ -59,13 +62,14 @@ export default function PriceWatch({
             ? price == null
             : true;
   };
+  const matchesSearch = createWishMatcher(search, smartSearch);
   const shown = items
     .filter(
       (i) =>
         matches(i, segment) &&
         (status === "all" || i.status === status) &&
         (priority === "all" || i.priority === priority) &&
-        i.product_name.toLowerCase().includes(search.toLowerCase()),
+        matchesSearch(i),
     )
     .sort((a, b) =>
       sort === "newest"
@@ -130,15 +134,13 @@ export default function PriceWatch({
         )}
       </div>
       <div className="filter-bar">
-        <div className="search-input">
-          <Search size={18} />
-          <input
-            aria-label="Search monitored wishes"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search monitored wishes…"
-          />
-        </div>
+        <SearchField
+          value={search}
+          onChange={setSearch}
+          smart={smartSearch}
+          onSmartChange={setSmartSearch}
+          label="Search monitored wishes"
+        />
         <details className="filter-popover">
           <summary>Filters</summary>
           <div className="filter-menu">

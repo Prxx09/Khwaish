@@ -19,7 +19,6 @@ import {
   Moon,
   MoreHorizontal,
   Plus,
-  Search,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -62,6 +61,8 @@ import PriceWatch from "./price-watch";
 import ItemDetail from "./item-detail";
 import SharingDialog from "./sharing-dialog";
 import { WishOrbit } from "./wish-orbit";
+import SearchField from "./search-field";
+import { createWishMatcher } from "./wish-search";
 
 type View = "shelf" | "shared" | "watch" | "ask" | "settings";
 const configured = Boolean(
@@ -100,6 +101,7 @@ export default function Workspace() {
     kind: ToastKind;
   } | null>(null);
   const [search, setSearch] = useState("");
+  const [smartSearch, setSmartSearch] = useState(true);
   const [category, setCategory] = useState("All");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
@@ -497,15 +499,13 @@ export default function Workspace() {
       ? items.filter((i) => i.status !== "purchased" && i.status !== "not_now")
       : items.filter((i) => i.library_id === activeId);
   const visible = useMemo(() => {
+    const matchesSearch = createWishMatcher(search, smartSearch);
     let result = scopeItems.filter(
       (i) =>
         (category === "All" || i.category === category) &&
         (status === "all" || i.status === status) &&
         (priority === "all" || i.priority === priority) &&
-        (!search ||
-          `${i.product_name} ${i.brand ?? ""} ${i.category ?? ""} ${i.notes}`
-            .toLowerCase()
-            .includes(search.toLowerCase())),
+        matchesSearch(i),
     );
     if (sort === "price-low")
       result.sort(
@@ -526,7 +526,7 @@ export default function Workspace() {
         (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
       );
     return result;
-  }, [scopeItems, category, status, priority, search, sort]);
+  }, [scopeItems, category, status, priority, search, smartSearch, sort]);
   const watchDrops = items.filter(
     (i) =>
       priceDrop(i) > 0 && i.status !== "purchased" && i.status !== "not_now",
@@ -1223,24 +1223,13 @@ export default function Workspace() {
               <section className="shelf-section" aria-label="Wishes">
                 <div className="shelf-toolbar">
                   <div className="filter-bar">
-                    <div className="search-input">
-                      <Search size={18} />
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search wishes…"
-                        aria-label="Search wishes"
-                      />
-                      {search && (
-                        <button
-                          className="mini-icon"
-                          onClick={() => setSearch("")}
-                          aria-label="Clear search"
-                        >
-                          <X size={18} />
-                        </button>
-                      )}
-                    </div>
+                    <SearchField
+                      value={search}
+                      onChange={setSearch}
+                      smart={smartSearch}
+                      onSmartChange={setSmartSearch}
+                      label="Search wishes"
+                    />
                     <details className="filter-popover">
                       <summary>
                         <Settings2 size={18} />
