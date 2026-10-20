@@ -23,6 +23,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  MoreHorizontal,
   Plus,
   Search,
   Settings2,
@@ -62,6 +63,7 @@ import {
 import AuthDialog from "./auth-dialog";
 import CaptureDialog, { type Draft } from "./capture-dialog";
 import ProductCard from "./product-card";
+import PriceWatch from "./price-watch";
 import ItemDetail from "./item-detail";
 import SharingDialog from "./sharing-dialog";
 
@@ -1130,23 +1132,17 @@ export default function Workspace() {
               </button>
             </div>
           )}
-          {(view === "shelf" || view === "watch") && (
+          {view === "shelf" && (
             <>
               <section className="shelf-heading">
                 <div>
                   <span className="eyebrow">
-                    {view === "watch"
-                      ? "ACROSS ALL YOUR SPACES"
-                      : activeLibrary?.kind === "shared"
-                        ? "SHARED SPACE"
-                        : "CURATED BY YOU"}
+                    {activeLibrary?.kind === "shared"
+                      ? "SHARED SPACE"
+                      : "CURATED BY YOU"}
                   </span>
                   <h1>
-                    {view === "watch" ? (
-                      <>
-                        Better <em>prices.</em>
-                      </>
-                    ) : activeLibrary?.kind === "shared" ? (
+                    {activeLibrary?.kind === "shared" ? (
                       activeLibrary.name
                     ) : (
                       <>
@@ -1155,9 +1151,8 @@ export default function Workspace() {
                     )}
                   </h1>
                   <p>
-                    {view === "watch"
-                      ? "Saved prices, recorded drops, and target prices."
-                      : "Save what catches your eye. Come back when the time feels right."}
+                    Save what catches your eye. Come back when the time feels
+                    right.
                   </p>
                 </div>
                 <div className="section-actions">
@@ -1212,22 +1207,16 @@ export default function Workspace() {
               )}
               <div
                 className="stats-strip"
-                aria-label={
-                  view === "watch"
-                    ? "Across all your spaces"
-                    : "Current shelf or space overview"
-                }
+                aria-label="Current shelf or space overview"
               >
                 <span>
                   <strong>{scopeItems.length}</strong> wishes
                 </span>
                 <span>
                   <strong>{money(value)}</strong>{" "}
-                  {view === "watch"
-                    ? "across all your spaces · INR"
-                    : activeLibrary?.kind === "shared"
-                      ? "space value · INR"
-                      : "shelf value · INR"}
+                  {activeLibrary?.kind === "shared"
+                    ? "space value · INR"
+                    : "shelf value · INR"}
                 </span>
                 {savings > 0 && (
                   <span className="green-text">
@@ -1442,20 +1431,37 @@ export default function Workspace() {
               </section>
             </>
           )}
+          {view === "watch" && (
+            <PriceWatch
+              items={scopeItems}
+              isDemo={isDemo}
+              loading={loading || !authReady}
+              error={loadError}
+              canEdit={(item) =>
+                !isDemo &&
+                memberships.some(
+                  (m) =>
+                    m.library_id === item.library_id && m.role !== "viewer",
+                )
+              }
+              onSelect={(item) => setSelectedId(item.id)}
+              onRefresh={refreshItem}
+              onExport={exportCsv}
+            />
+          )}
           {view === "shared" && (
             <>
               <section className="page-heading">
-                <span className="eyebrow">
-                  YOUR PEOPLE. YOUR POSSIBILITIES.
-                </span>
-                <h1>
-                  Better <em>together.</em>
-                  <span className="heading-star">✦</span>
-                </h1>
-                <p>
-                  For your next apartment, birthday ideas, or the things you
-                  both keep sending each other.
-                </p>
+                <div>
+                  <span className="eyebrow">YOUR PEOPLE. YOUR PLANS.</span>
+                  <h1>
+                    Better <em>together.</em>
+                  </h1>
+                  <p>
+                    One space for your next home, birthday plans, or the wishes
+                    you keep sending each other.
+                  </p>
+                </div>
                 <button
                   className="btn primary"
                   onClick={() => {
@@ -1463,82 +1469,103 @@ export default function Workspace() {
                     setShareOpen(true);
                   }}
                 >
-                  <Plus size={17} />
+                  <Plus size={18} />
                   Create a shared space
                 </button>
               </section>
-              <div className="spaces-grid">
-                {shared.map((lib, index) => (
-                  <article
-                    className={`space-card space-tone-${index % 3}`}
-                    key={lib.id}
-                  >
-                    <div className="space-card-top">
-                      <span className="space-card-icon">
-                        <FolderHeart size={30} />
-                      </span>
-                      <span className="pill">
-                        {lib.owner_id === userId
-                          ? "Your space"
-                          : "Joined space"}
-                      </span>
-                    </div>
-                    <h2>{lib.name}</h2>
-                    <p>
-                      {items.filter((i) => i.library_id === lib.id).length}{" "}
-                      wishes · a world of possibilities
-                    </p>
-                    <div className="space-card-bottom">
-                      <button onClick={() => go("shelf", lib.id)}>
-                        Step inside
-                        <ArrowRight size={17} />
-                      </button>
-                      <button
-                        className="icon-btn"
-                        aria-label={`Manage ${lib.name}`}
-                        onClick={() => {
-                          setShareLibrary(lib);
-                          setShareOpen(true);
-                        }}
-                      >
-                        <Users size={19} />
-                      </button>
-                    </div>
-                    {lib.owner_id === userId && (
-                      <button
-                        className="space-delete"
-                        onClick={() => setConfirmLibraryDelete(lib)}
-                      >
-                        Remove space
-                      </button>
-                    )}
-                  </article>
-                ))}
-                <button
-                  className="new-space-card"
-                  onClick={() => {
-                    setShareLibrary(undefined);
-                    setShareOpen(true);
-                  }}
-                >
-                  <span>
-                    <Plus size={30} />
-                  </span>
-                  <h3>Make room for more.</h3>
-                  <p>
-                    A new shared space,
-                    <br />a new little adventure.
-                  </p>
-                </button>
-              </div>
+              {loading || !authReady ? (
+                <Skeletons />
+              ) : loadError ? (
+                <EmptyState
+                  title="Your spaces couldn’t load."
+                  body="Use Try again above to reconnect."
+                />
+              ) : shared.length ? (
+                <div className="spaces-grid">
+                  {shared.map((lib) => {
+                    const wishes = items.filter((i) => i.library_id === lib.id);
+                    const total = wishes
+                      .filter((i) => i.currency.trim() === "INR")
+                      .reduce((n, i) => n + (currentPrice(i) ?? 0), 0);
+                    const role =
+                      isDemo && lib.owner_id === userId
+                        ? "owner"
+                        : memberships.find(
+                            (m) =>
+                              m.library_id === lib.id && m.user_id === userId,
+                          )?.role;
+                    return (
+                      <article className="space-card" key={lib.id}>
+                        <div className="space-card-top">
+                          <span className="space-card-icon">
+                            <FolderHeart size={26} />
+                          </span>
+                          <span className="pill">
+                            {lib.owner_id === userId ? "Owner" : "Joined"} ·{" "}
+                            {role || "Member"}
+                          </span>
+                          {lib.owner_id === userId && (
+                            <details className="space-overflow">
+                              <summary
+                                aria-label={`More actions for ${lib.name}`}
+                                title="More actions"
+                              >
+                                <MoreHorizontal size={20} />
+                              </summary>
+                              <button
+                                onClick={() => setConfirmLibraryDelete(lib)}
+                              >
+                                Remove space
+                              </button>
+                            </details>
+                          )}
+                        </div>
+                        <h2>{lib.name}</h2>
+                        <p>
+                          {wishes.length} wishes · {money(total)} total · INR
+                        </p>
+                        <div className="space-card-bottom">
+                          <button
+                            className="btn primary"
+                            onClick={() => go("shelf", lib.id)}
+                          >
+                            Open
+                            <ArrowRight size={18} />
+                          </button>
+                          <button
+                            className="btn secondary"
+                            aria-label={`People in ${lib.name}`}
+                            onClick={() => {
+                              setShareLibrary(lib);
+                              setShareOpen(true);
+                            }}
+                          >
+                            <Users size={18} />
+                            People
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Good taste deserves good company."
+                  body={
+                    isDemo
+                      ? "Sign in to create a space, invite your people, and save wishes together."
+                      : "Create your first space for a shared plan. Your shelf stays private."
+                  }
+                />
+              )}
               <div className="privacy-note">
                 <ShieldCheck size={20} />
                 <div>
                   <strong>Sharing is always your choice.</strong>
                   <p>
-                    Your personal shelf stays private. Shared-space editors can
-                    add and edit; viewers can browse and comment. Invitations
-                    expire after 7 days.
+                    Your shelf stays private. Space editors can add and edit;
+                    viewers can browse and comment. Invitations expire after 7
+                    days.
                   </p>
                 </div>
               </div>
