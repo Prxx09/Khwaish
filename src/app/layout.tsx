@@ -1,6 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
-import "./refinements.css";
+const sans = localFont({
+  src: "./fonts/dm-sans.woff2",
+  variable: "--font-sans",
+  weight: "100 1000",
+  display: "swap",
+});
+const serif = localFont({
+  src: "./fonts/instrument-serif-italic.woff2",
+  variable: "--font-serif",
+  weight: "400",
+  style: "italic",
+  display: "swap",
+});
 export const metadata: Metadata = {
   title: "Khwaish — A little space for your next big want",
   description:
@@ -19,7 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${sans.variable} ${serif.variable}`}
+      data-theme="dark"
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
