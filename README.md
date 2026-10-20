@@ -1,4 +1,4 @@
-# Khwahish ✦
+# Khwaish ✦
 
 A personal and shared wishlist for your next favourite thing. Responsive Next.js website with dark **After hours** and light **Daydream** themes, Supabase authentication and private storage.
 
@@ -12,12 +12,12 @@ A personal and shared wishlist for your next favourite thing. Responsive Next.js
 - Manual capture, categories, priority, status, notes, size/color/variant, product code, target price and target date.
 - Initial saved price preserved separately from timestamped price observations; on-demand store checks, history chart and price-drop totals.
 - Groq semantic wishlist search sends the selected library's accessible product details (up to 500 items) for matching. IDs are checked against RLS-filtered records and INR totals are calculated in application code. Guest mode and provider errors use local filtering; a notice identifies a fallback.
-- Ask Khwahish answers in plain text with clickable product attachments and recent conversational context. Clear chat removes the in-memory transcript; changing scope or account resets it. Conversation is not persisted to the database.
+- Ask Khwaish answers in plain text with clickable product attachments and recent conversational context. Clear chat removes the in-memory transcript; changing scope or account resets it. Conversation is not persisted to the database.
 - Screenshot capture supports file selection, drag/drop, Ctrl+V/Cmd+V image paste, and a clipboard button with browser-permission fallback guidance.
 - Shared item conversations, database-backed access checks and realtime item/comment updates.
 - CSV export, grid/list views, responsive mobile navigation, keyboard-accessible native dialogs and reduced-motion support.
 - Empty browser-only guest shelves; signing in opens a separate private account. Desktop navigation uses a top workspace bar; mobile retains its drawer and bottom navigation.
-- Delete individual authored product comments or clear your own messages with confirmation. Ask Khwahish includes a clear-chat action.
+- Delete individual authored product comments or clear your own messages with confirmation. Ask Khwaish includes a clear-chat action.
 
 ## What needs an external integration
 

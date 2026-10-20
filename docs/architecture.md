@@ -1,4 +1,4 @@
-# Khwahish architecture
+# Khwaish architecture
 
 ## Runtime
 

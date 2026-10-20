@@ -74,7 +74,7 @@ const NAV = [
   { id: "shelf", name: "My shelf", Icon: LayoutGrid },
   { id: "shared", name: "Shared spaces", Icon: Users },
   { id: "watch", name: "Price watch", Icon: TrendingDown },
-  { id: "ask", name: "Ask Khwahish", Icon: Sparkles },
+  { id: "ask", name: "Ask Khwaish", Icon: Sparkles },
 ] as const;
 
 export default function Workspace() {
@@ -943,7 +943,7 @@ export default function Workspace() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "Khwahish-wishlist.csv";
+    anchor.download = "Khwaish-wishlist.csv";
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -1577,7 +1577,7 @@ export default function Workspace() {
                     setQuery("Show my must-haves under ₹5,000");
                   }}
                 >
-                  Ask Khwahish
+                  Ask Khwaish
                   <ArrowRight size={18} />
                 </button>
               </section>
@@ -1688,12 +1688,12 @@ export default function Workspace() {
           {view === "ask" && (
             <section
               className="chat-page"
-              aria-label="Ask Khwahish"
+              aria-label="Ask Khwaish"
               ref={chatPageRef}
             >
               <header className="chat-header">
                 <h1>
-                  <Sparkles size={20} /> Ask Khwahish
+                  <Sparkles size={20} /> Ask Khwaish
                 </h1>
                 <div className="query-scope">
                   <button
@@ -1753,7 +1753,7 @@ export default function Workspace() {
                         <div className="chat-reply">
                           <div className="chat-speaker">
                             <Sparkles size={17} />
-                            <strong>Khwahish</strong>
+                            <strong>Khwaish</strong>
                             <small>
                               {turn.mode === "ai" ? "Groq" : "Local search"}
                             </small>
@@ -2101,7 +2101,7 @@ export default function Workspace() {
           >
             <Icon size={20} />
             <span>
-              {name === "Ask Khwahish"
+              {name === "Ask Khwaish"
                 ? "Ask"
                 : name === "Shared spaces"
                   ? "Shared"

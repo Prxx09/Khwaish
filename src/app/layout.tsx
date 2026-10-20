@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./refinements.css";
 export const metadata: Metadata = {
-  title: "Khwahish — A little space for your next big want",
+  title: "Khwaish — A little space for your next big want",
   description:
     "Save what catches your eye. Build your personal wishlist, dream together in shared libraries, and keep an eye on prices.",
   icons: { icon: "/icon.svg" },

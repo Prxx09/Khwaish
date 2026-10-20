@@ -61,7 +61,7 @@ export async function fetchPublicPage(
           lookup: (_hostname, _options, callback) =>
             callback(null, address.address, address.family),
           headers: {
-            "User-Agent": "Khwahish/1.0 (+wishlist product metadata preview)",
+            "User-Agent": "Khwaish/1.0 (+wishlist product metadata preview)",
             Accept: "text/html,application/xhtml+xml",
             "Accept-Language": "en-IN,en;q=0.9",
             "Accept-Encoding": "identity",

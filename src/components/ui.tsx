@@ -11,7 +11,7 @@ export function Brand({ small = false }: { small?: boolean }) {
       </span>
       {!small && (
         <span>
-          khwahish<span className="brand-dot">.</span>
+          Khwaish<span className="brand-dot">.</span>
         </span>
       )}
     </div>
