@@ -1140,15 +1140,35 @@ export default function Workspace() {
                       activeLibrary.name
                     ) : (
                       <>
-                        Your shelf, <em>your taste.</em>
+                        SEE IT.<br />WANT IT.<br /><span className="hero-accent">KEEP IT.</span>
                       </>
                     )}
                   </h1>
                   <p className="shelf-caption">
-                    Good taste. Great timing. All yours.
+                    Everything you’re into. One place to make it happen.
                   </p>
+                  <button className="hero-link-action" disabled={!canEdit} onClick={() => setCaptureOpen(true)}>
+                    <span>Paste a product link</span><ArrowUpRight size={22} />
+                  </button>
+                  <p className="hero-helper">Any store. Screenshots welcome. Always your choice.</p>
                 </div>
-                <WishOrbit />
+                <div className="wish-stage" aria-hidden="true">
+                  <span className="stage-label">A PLACE FOR YOUR NEXT.</span>
+                  <div className="stage-disc" />
+                  <svg className="stage-headphones" viewBox="0 0 400 400" fill="none">
+                    <defs>
+                      <linearGradient id="headband" x1="90" y1="80" x2="320" y2="320" gradientUnits="userSpaceOnUse"><stop stopColor="#b5bdc9"/><stop offset=".5" stopColor="#f4f6fa"/><stop offset="1" stopColor="#707b8a"/></linearGradient>
+                      <linearGradient id="earcup" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#404958"/><stop offset="1" stopColor="#111720"/></linearGradient>
+                    </defs>
+                    <path d="M95 248V176C95 36 305 36 305 176V248" stroke="#151c27" strokeWidth="39" strokeLinecap="round"/>
+                    <path d="M95 226V176C95 36 305 36 305 176V226" stroke="url(#headband)" strokeWidth="24" strokeLinecap="round"/>
+                    <g transform="rotate(-12 100 260)"><rect x="60" y="204" width="77" height="125" rx="36" fill="url(#headband)"/><rect x="74" y="210" width="55" height="113" rx="27" fill="url(#earcup)"/><path d="M88 230V295" stroke="#5c6572" strokeWidth="2" strokeLinecap="round"/></g>
+                    <g transform="rotate(12 300 260)"><rect x="263" y="204" width="77" height="125" rx="36" fill="url(#headband)"/><rect x="271" y="210" width="55" height="113" rx="27" fill="url(#earcup)"/><path d="M312 230V295" stroke="#5c6572" strokeWidth="2" strokeLinecap="round"/></g>
+                  </svg>
+                  <span className="stage-chip stage-chip-top"><Sparkles size={16} /> Your taste. No limits.</span>
+                  <span className="stage-chip stage-chip-bottom"><Check size={16} /> Saved for someday.</span>
+                  <span className="stage-caption">THE THINGS YOU LOVE.<br />THE SPACE THEY DESERVE.</span>
+                </div>
                 <div className="section-actions">
                   {activeLibrary?.kind === "shared" && view === "shelf" && (
                     <button
@@ -1347,7 +1367,7 @@ export default function Workspace() {
                     <p>
                       Good things <em>ahead.</em>
                     </p>
-                    <span>One wish at a time.</span>
+                    <button className="text-btn" onClick={() => setCaptureOpen(true)} disabled={!canEdit}>Add your first wish <ArrowRight size={18} /></button>
                   </aside>
                 )}
                 {loading || !authReady ? (

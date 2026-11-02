@@ -15,21 +15,23 @@
     --image-d: #dfe5dd;
   }
   [data-theme="light"] {
-    --bg: #f5f2e9;
-    --panel: #fffdf7;
-    --panel-2: #ece9df;
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #eef0f3;
     --panel-hover: #e4e5d6;
-    --text: #252b22;
-    --muted: #626657;
+    --text: #12151b;
+    --muted: #59616e;
     --subtle: #626657;
     --edge: #d9d8cb;
     --line: #858975;
-    --glass: #f5f2e9f5;
+    --glass: #ffffffed;
     --accent-ink: #455a21;
     --accent-soft: #e5ebd5;
     --shadow-color: #242c1410;
   }
   body { background: var(--bg); }
+  body { font-family: var(--font-sans), Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h1 em, .empty-shelf-banner em { font-family: var(--font-sans), Arial, sans-serif; font-style: normal; }
   .app-header { padding-inline: clamp(16px, 3vw, 48px); gap: 20px; }
   .brand { letter-spacing: -1.4px; font-weight: 600; }
   .brand-mark { border-radius: 50%; }
@@ -104,5 +106,60 @@
     .product-card, .image-button img, .space-card, .watch-row {
       animation: none; transition: none; transform: none;
     }
+  }
+  /* Modern product-led entry and collection surfaces. */
+  .shelf-heading {
+    display: grid; grid-template-columns: 1fr 1fr; position: relative;
+    padding: 36px 0 28px; gap: 32px; align-items: center; border: 0;
+  }
+  .shelf-heading h1 { font-size: clamp(3.5rem, 7vw, 7rem); font-weight: 900; line-height: .88; letter-spacing: -.065em; }
+  .hero-accent { display: inline-block; color: #12151b; background: var(--accent); padding: .04em .06em .08em; margin-top: .07em; }
+  .shelf-heading .eyebrow { color: var(--muted); font-weight: 700; letter-spacing: .14em; }
+  .shelf-heading .shelf-caption { max-width: 340px; font-size: 17px; line-height: 1.5; margin-top: 24px; }
+  .hero-link-action { display: flex; align-items: center; justify-content: space-between; gap: 28px; margin-top: 24px; background: var(--text); color: var(--bg); padding: 16px 22px; border-radius: 100px; font-weight: 650; min-height: 54px; }
+  .hero-helper { color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .shelf-heading .section-actions { grid-column: 1 / -1; justify-content: flex-end; margin-top: -12px; }
+  .wish-stage { align-self: stretch; position: relative; min-height: 390px; border-radius: 28px; overflow: hidden; background: #e9edf3; isolation: isolate; color: #161b24; }
+  .stage-label { position: absolute; top: 24px; left: 24px; font-size: 10px; font-weight: 800; letter-spacing: .17em; }
+  .stage-disc { position: absolute; width: 75%; aspect-ratio: 1; border-radius: 50%; background: #d7fa78; left: 13%; top: 12%; }
+  .stage-headphones { position: absolute; width: 90%; height: 90%; left: 6%; top: 0; transform: rotate(-18deg); filter: drop-shadow(12px 28px 15px #1c29402b); }
+  .stage-chip { display: flex; align-items: center; gap: 8px; position: absolute; padding: 12px 16px; background: #ffffffed; border: 1px solid #ffffff; border-radius: 14px; font-size: 12px; font-weight: 650; box-shadow: 0 12px 32px #222d4010; }
+  .stage-chip-top { right: 20px; top: 65px; transform: rotate(5deg); }
+  .stage-chip-bottom { bottom: 75px; left: 20px; transform: rotate(-5deg); }
+  .stage-caption { position: absolute; bottom: 24px; right: 24px; text-align: right; font-size: 10px; letter-spacing: .08em; font-weight: 750; }
+  .desktop-nav button { font-weight: 600; font-size: 13px; }
+  .desktop-nav button[aria-current="page"] { background: var(--text); color: var(--bg); }
+  .shelf-context { border-block: 1px solid var(--edge); padding-block: 16px; margin-bottom: 24px; }
+  .shelf-toolbar .input-icon { border: 0; background: var(--panel-2); border-radius: 100px; }
+  .shelf-toolbar select, .filter-popover > summary { border-color: var(--edge); border-radius: 100px; }
+  .category-tabs button { border-radius: 100px; }
+  .product-card { border: 0; background: var(--panel); border-radius: 22px; }
+  .product-image-wrap { background: #eef0f3; border-radius: 20px; }
+  .product-title { font-size: 18px; font-weight: 700; }
+  .product-card-bottom { border-top: 0; padding-top: 6px; margin-top: 12px; }
+  .product-card-bottom strong { font-weight: 750; }
+  .empty-shelf-banner { background: var(--panel); border-radius: 20px; }
+  .empty-shelf-banner p { font-size: 22px; font-weight: 750; letter-spacing: -.04em; }
+  .empty-state { border: 0; border-radius: 24px; background: var(--panel); margin-top: 20px; }
+  .empty-state h3 { font-weight: 750; }
+  .modal-head h2, .page-heading h1, .chat-welcome h1 { font-weight: 750; }
+  @media (prefers-reduced-motion: no-preference) {
+    .wish-stage { animation: enter 500ms var(--ease) both; }
+    .stage-headphones { transition: transform 600ms var(--ease); }
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .wish-stage:hover .stage-headphones { transform: rotate(-10deg) scale(1.04); }
+    .hero-link-action:hover { box-shadow: var(--elevation-2); }
+  }
+  @media (max-width: 767px) {
+    .shelf-heading { grid-template-columns: 1fr; padding-top: 20px; gap: 24px; }
+    .shelf-heading h1 { font-size: clamp(3.5rem, 15vw, 5rem); }
+    .shelf-heading .shelf-caption { font-size: 15px; margin-top: 20px; }
+    .hero-link-action { margin-top: 20px; width: 100%; }
+    .wish-stage { min-height: 260px; }
+    .stage-headphones { width: 75%; left: 14%; }
+    .stage-disc { width: 60%; left: 20%; top: 0; }
+    .shelf-heading .section-actions { margin: 0; }
+    .shelf-context { flex-wrap: wrap; }
   }
 }
