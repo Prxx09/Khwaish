@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: "#16181d",
 };
-const themeScript = `(function(){try{var t=localStorage.getItem('khwahish:theme')||'dark';document.documentElement.dataset.theme=t;}catch(e){}})()`;
+const themeScript = `(function(){try{var t=localStorage.getItem('khwahish:theme')||'light';document.documentElement.dataset.theme=t;}catch(e){}})()`;
 export default function RootLayout({
   children,
 }: {
@@ -35,7 +35,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${sans.variable} ${serif.variable}`}
-      data-theme="dark"
+      data-theme="light"
       suppressHydrationWarning
     >
       <head>
