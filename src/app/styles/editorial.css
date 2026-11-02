@@ -1,0 +1,108 @@
+/* Presentation only. Shared surfaces retain their existing semantics and events. */
+@layer editorial {
+  :root {
+    --bg: #171917;
+    --panel: #20231f;
+    --panel-2: #2a2e28;
+    --edge: #3b4037;
+    --text: #f3f0e7;
+    --muted: #c3c6b8;
+    --glass: #171917f5;
+    --radius-lg: 24px;
+    --image-a: #ebe8df;
+    --image-b: #e5e5dc;
+    --image-c: #e9dfd5;
+    --image-d: #dfe5dd;
+  }
+  [data-theme="light"] {
+    --bg: #f5f2e9;
+    --panel: #fffdf7;
+    --panel-2: #ece9df;
+    --panel-hover: #e4e5d6;
+    --text: #252b22;
+    --muted: #626657;
+    --subtle: #626657;
+    --edge: #d9d8cb;
+    --line: #858975;
+    --glass: #f5f2e9f5;
+    --accent-ink: #455a21;
+    --accent-soft: #e5ebd5;
+    --shadow-color: #242c1410;
+  }
+  body { background: var(--bg); }
+  .app-header { padding-inline: clamp(16px, 3vw, 48px); gap: 20px; }
+  .brand { letter-spacing: -1.4px; font-weight: 600; }
+  .brand-mark { border-radius: 50%; }
+  .desktop-nav button[aria-current="page"] {
+    background: var(--accent-soft); color: var(--text); box-shadow: none;
+  }
+  .main-content { max-width: 1440px; }
+  .shelf-heading {
+    padding: 28px 0 32px; border: 0; border-bottom: 1px solid var(--edge);
+    border-radius: 0; background: none; margin-bottom: 24px;
+    overflow: visible; gap: 24px;
+  }
+  .shelf-heading h1 {
+    font-size: clamp(2.75rem, 5.6vw, 5.25rem);
+    font-weight: 450; letter-spacing: -.065em; line-height: 1.03;
+  }
+  .shelf-heading h1 em { font-weight: 400; letter-spacing: -.035em; }
+  .shelf-heading .eyebrow, .page-heading .eyebrow {
+    letter-spacing: .18em; font-size: 11px; margin-bottom: 16px;
+  }
+  .shelf-heading .shelf-caption { margin-top: 18px; font-size: 15px; }
+  .shelf-heading > .wish-orbit { display: none; }
+  .shelf-heading .section-actions { align-self: flex-end; flex-shrink: 0; }
+  .btn { border-radius: var(--radius-pill); padding-inline: 22px; }
+  .btn.primary { box-shadow: none; }
+  .btn.secondary { border-color: var(--edge); }
+  .shelf-context { padding-block: 4px 20px; }
+  .shelf-toolbar { padding-block: 8px 20px; }
+  .category-tabs { gap: 8px; }
+  .product-grid { gap: 28px; }
+  .product-card { border-color: var(--edge); box-shadow: none; }
+  .product-image-wrap { aspect-ratio: 1 / 1; }
+  .image-button img { padding: 32px; }
+  .product-card-body { padding: 22px; }
+  .product-title { font-weight: 550; font-size: 18px; letter-spacing: -.025em; overflow-wrap: anywhere; }
+  .card-meta { font-size: 11px; letter-spacing: .03em; }
+  .product-card-bottom { padding-top: 18px; margin-top: 20px; }
+  .product-card-bottom strong { font-weight: 550; }
+  .empty-shelf-banner, .empty-state, .settings-card, .space-card {
+    border: 1px solid var(--edge); box-shadow: none;
+  }
+  .empty-state { padding: clamp(28px, 5vw, 64px) 24px; }
+  .empty-state h3 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 450; letter-spacing: -.04em; }
+  .modal, .sheet, .account-menu { border-color: var(--edge); }
+  .modal-head { padding-bottom: 20px; border-bottom: 1px solid var(--edge); margin-bottom: 24px; }
+  .modal-head h2 { font-size: 28px; font-weight: 500; letter-spacing: -.04em; }
+  .capture-tabs, .detail-tabs, .segmented { background: var(--panel-2); border-radius: 16px; }
+  .capture-tabs button, .detail-tabs button { border-radius: 12px; }
+  .notice { border-radius: 12px; }
+  .chat-welcome h1, .page-heading h1 { letter-spacing: -.05em; font-weight: 450; }
+  .orbit-core, .orbit-ring { animation: none; }
+  .product-card:hover, .product-card:focus-within { transform: none; box-shadow: var(--elevation-1); }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .product-card:hover { transform: translateY(-3px); }
+    .product-card:hover .image-button img { transform: scale(1.035); }
+  }
+  @media (hover: none) {
+    .product-card:hover .image-button img { transform: none; }
+  }
+  @media (max-width: 767px) {
+    .shelf-heading { padding: 16px 0 24px; gap: 20px; }
+    .shelf-heading h1 { font-size: clamp(2.5rem, 10vw, 4rem); }
+    .shelf-heading .section-actions { align-self: flex-start; }
+    .shelf-heading .shelf-caption { margin-top: 12px; }
+    .product-grid { gap: 20px; }
+    .product-image-wrap { aspect-ratio: 6 / 5; }
+    .product-card-body { padding: 18px; }
+    .modal-head h2 { font-size: 25px; }
+    .app-header { gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .product-card, .image-button img, .space-card, .watch-row {
+      animation: none; transition: none; transform: none;
+    }
+  }
+}

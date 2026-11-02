@@ -89,7 +89,7 @@ export default function Workspace() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
   const loadVersion = useRef(0);
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
   const [authOpen, setAuthOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -293,7 +293,7 @@ export default function Workspace() {
   }, []);
 
   useEffect(() => {
-    setTheme(document.documentElement.dataset.theme ?? "dark");
+    setTheme(document.documentElement.dataset.theme ?? "light");
     const params = new URLSearchParams(location.search);
     const invitation = params.get("invite");
     if (invitation) {
