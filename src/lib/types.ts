@@ -86,6 +86,7 @@ export type ExtractedProduct = {
   source: string;
   confidence: number;
   checked_at: string;
+  notes?: string;
   warning?: string;
 };
 export const CATEGORIES = [

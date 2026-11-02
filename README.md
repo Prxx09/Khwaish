@@ -7,7 +7,7 @@ A personal and shared wishlist for your next favourite thing. Responsive Next.js
 - Email/password sign-up, sign-in, recovery callback, editable profile and password.
 - Private personal shelf, multiple shared spaces, owner/editor/viewer roles.
 - Single-use, seven-day invite links, revocation, member role changes and removal.
-- Product link previews from public Schema.org/Open Graph metadata; editable review before saving.
+- Product link previews use an optional Bright Data retailer scraper when configured, then fall back to public Schema.org/Open Graph metadata; editable review before saving.
 - Browser-side full screenshot OCR with Tesseract.js, preprocessing and manual fallback. Optional Groq structuring sends recognized text to Groq after local OCR; the toggle explains this before upload. The screenshot and original OCR text are stored privately only when saving to an authenticated account. Unsupported fields stay unknown, and selling price/title evidence is checked against the recognized text.
 - Manual capture, categories, priority, status, notes, size/color/variant, product code, target price and target date.
 - Initial saved price preserved separately from timestamped price observations; on-demand store checks, history chart and price-drop totals.
@@ -23,7 +23,8 @@ A personal and shared wishlist for your next favourite thing. Responsive Next.js
 
 There is no universal free product/price API for all retailers. This app does **not** fabricate live offers or bypass retailer verification pages.
 
-- **Link imports/current price:** use readable public metadata where the retailer provides it. If blocked or absent, preserve the saved item and offer manual entry.
+- **Link imports:** optional Bright Data product scrapers add richer retailer data. Amazon uses the documented product dataset by default; Flipkart, Myntra, and generic product scrapers need their dataset IDs from your Bright Data dashboard. If Bright Data is unavailable or not configured for the retailer, the app falls back to readable public metadata.
+- **Current price:** on-demand and scheduled checks continue to read the original product page. Imported price, seller, variant, and delivery details must be reviewed because location and checkout conditions can change.
 - **Screenshots:** extract visible text/price locally. A screenshot alone cannot reliably identify an exact web listing or stock image; add its product URL to fetch retailer imagery, or configure the shopping search provider and review matches in Compare.
 - **Cross-store cards:** optional `SERPAPI_API_KEY` enables Google Shopping search results. Without it, store search links remain available. Search matches are not automatically asserted to be the same model/variant.
 - **Scheduled checks:** optional server-only Supabase key and `CRON_SECRET` enable the Vercel cron route. A bounded rotating batch of four opted-in items is checked per run, to stay within function execution limits. No per-product daily refresh promise is made. Without those keys, checks are on demand.
@@ -39,7 +40,7 @@ cd Khwaish
 npm ci
 ```
 
-Copy `.env.example` to `.env.local` (Windows: `copy .env.example .env.local`) and fill the two required public Supabase values. Then:
+Copy `.env.example` to `.env.local` (Windows: `copy .env.example .env.local`) and fill the two required public Supabase values. To enable richer product-link imports, add `BRIGHT_DATA_API_KEY`. Amazon works with the documented default dataset; for Flipkart or Myntra, open the corresponding Bright Data scraper, copy its dataset ID, and set `BRIGHT_DATA_FLIPKART_DATASET_ID` or `BRIGHT_DATA_MYNTRA_DATASET_ID`. Keep every Bright Data value server-only. Then:
 
 ```sh
 npm run dev

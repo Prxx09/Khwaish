@@ -264,6 +264,7 @@ export default function CaptureDialog({
         source: p.source,
         confidence: p.confidence,
         availability: p.availability,
+        notes: p.notes ?? d.notes,
       }));
       setReady(true);
       setNotice(

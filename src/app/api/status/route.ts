@@ -3,6 +3,7 @@ export async function GET() {
   return NextResponse.json(
     {
       comparison: Boolean(process.env.SERPAPI_API_KEY),
+      productExtraction: Boolean(process.env.BRIGHT_DATA_API_KEY),
       aiStructuring: Boolean(process.env.GROQ_API_KEY),
       aiWishlist: Boolean(process.env.GROQ_API_KEY),
       scheduled: Boolean(
