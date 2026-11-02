@@ -23,7 +23,7 @@ A personal and shared wishlist for your next favourite thing. Responsive Next.js
 
 There is no universal free product/price API for all retailers. This app does **not** fabricate live offers or bypass retailer verification pages.
 
-- **Link imports:** optional Bright Data product scrapers add richer retailer data. Amazon uses the documented product dataset by default; Flipkart, Myntra, and generic product scrapers need their dataset IDs from your Bright Data dashboard. If Bright Data is unavailable or not configured for the retailer, the app falls back to readable public metadata.
+- **Link imports:** optional Bright Data product scrapers add richer retailer data. Amazon, Flipkart, Nike and Adidas have built-in dataset IDs; Myntra and any custom site-specific scrapers can be registered through server-only configuration. Unknown stores such as Samsung, LG or Culture Circle skip Bright Data and fall back to Schema.org Product JSON-LD/Open Graph metadata rather than being sent to an incompatible scraper.
 - **Current price:** on-demand and scheduled checks continue to read the original product page. Imported price, seller, variant, and delivery details must be reviewed because location and checkout conditions can change.
 - **Screenshots:** extract visible text/price locally. A screenshot alone cannot reliably identify an exact web listing or stock image; add its product URL to fetch retailer imagery, or configure the shopping search provider and review matches in Compare.
 - **Cross-store cards:** optional `SERPAPI_API_KEY` enables Google Shopping search results. Without it, store search links remain available. Search matches are not automatically asserted to be the same model/variant.
@@ -40,7 +40,7 @@ cd Khwaish
 npm ci
 ```
 
-Copy `.env.example` to `.env.local` (Windows: `copy .env.example .env.local`) and fill the two required public Supabase values. To enable richer product-link imports, add `BRIGHT_DATA_API_KEY`. Amazon works with the documented default dataset; for Flipkart or Myntra, open the corresponding Bright Data scraper, copy its dataset ID, and set `BRIGHT_DATA_FLIPKART_DATASET_ID` or `BRIGHT_DATA_MYNTRA_DATASET_ID`. Keep every Bright Data value server-only. Then:
+Copy `.env.example` to `.env.local` (Windows: `copy .env.example .env.local`) and fill the two required public Supabase values. To enable richer imports for Amazon, Flipkart, Nike and Adidas, add only `BRIGHT_DATA_API_KEY`; their dataset IDs are built in and can be overridden if needed. Add the Myntra dataset ID separately after selecting that scraper. Additional dedicated scrapers can be registered in the single `BRIGHT_DATA_DATASET_MAP` JSON variable. Keep the API key server-only. Then:
 
 ```sh
 npm run dev
