@@ -4,6 +4,7 @@ import https from "node:https";
 import ipaddr from "ipaddr.js";
 import * as cheerio from "cheerio";
 import type { ExtractedProduct } from "./types";
+import { getBrightDataProduct } from "./bright-data";
 
 export function isPublicAddress(address: string) {
   try {
@@ -257,6 +258,7 @@ export function extractProduct(html: string, url: string): ExtractedProduct {
     source: product ? "structured_product_data" : "page_metadata",
     confidence: product ? 0.94 : 0.65,
     checked_at: new Date().toISOString(),
+    notes: "",
     ...(price == null
       ? {
           warning:
@@ -266,6 +268,24 @@ export function extractProduct(html: string, url: string): ExtractedProduct {
   };
 }
 export async function getProductMetadata(url: string) {
-  const page = await fetchPublicPage(url);
-  return extractProduct(page.html, page.url);
+  const validated = validateProductUrl(url).href;
+  let providerWarning = "";
+  try {
+    const providerProduct = await getBrightDataProduct(validated);
+    if (providerProduct) return providerProduct;
+  } catch (error) {
+    providerWarning =
+      error instanceof Error
+        ? `${error.message} Using public page metadata instead.`
+        : "Bright Data was unavailable. Using public page metadata instead.";
+    console.info("Bright Data product import fallback");
+  }
+  const page = await fetchPublicPage(validated);
+  const product = extractProduct(page.html, page.url);
+  return providerWarning
+    ? {
+        ...product,
+        warning: [providerWarning, product.warning].filter(Boolean).join(" "),
+      }
+    : product;
 }

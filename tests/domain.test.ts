@@ -9,6 +9,10 @@ import {
 import { queryWishlist } from "../src/lib/query";
 import { demoItems } from "../src/lib/demo-data";
 import { safeUrl, latestPrice, priceDrop } from "../src/lib/types";
+import {
+  datasetFor,
+  normalizeBrightDataProduct,
+} from "../src/lib/bright-data";
 
 test("blocks private, loopback, link-local, IPv4-mapped loopback and credentials", () => {
   for (const ip of [
@@ -96,4 +100,40 @@ test("prices never compare different currencies", () => {
   ];
   assert.equal(latestPrice(item), undefined);
   assert.equal(priceDrop(item), 0);
+});
+
+test("normalizes a Bright Data product without confusing original and current prices", () => {
+  const product = normalizeBrightDataProduct(
+    [{
+      title: "Noise Cancelling Headphones",
+      brand: "Acme",
+      final_price: 7999,
+      initial_price: 9999,
+      currency: "INR",
+      availability: "In stock",
+      asin: "B012345678",
+      images: [{ url: "https://images.example/headphones.jpg" }],
+      rating: 4.5,
+      reviews_count: 123,
+      features: ["ANC", "30-hour battery"],
+      category: "Electronics > Audio",
+    }],
+    "https://www.amazon.in/dp/B012345678",
+  );
+  assert.ok(product);
+  assert.equal(product.price, 7999);
+  assert.equal(product.product_code, "B012345678");
+  assert.equal(product.category, "Electronics");
+  assert.equal(product.availability, "in_stock");
+  assert.match(product.notes ?? "", /Original price: 9999/);
+  assert.match(product.notes ?? "", /ANC/);
+});
+
+test("selects specific retailer datasets and leaves unknown stores to metadata extraction", () => {
+  assert.equal(datasetFor("www.flipkart.com"), "gd_mljhtaoe2n284ux79e");
+  assert.equal(datasetFor("nike.com"), "gd_mlhzncrq29jig30p2a");
+  assert.equal(datasetFor("www.adidas.co.in"), "gd_ml5c00bomtfxs56vl");
+  assert.equal(datasetFor("samsung.com"), "");
+  assert.equal(datasetFor("lg.com"), "");
+  assert.equal(datasetFor("notnike.com"), "");
 });
