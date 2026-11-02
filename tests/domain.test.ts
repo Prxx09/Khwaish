@@ -9,7 +9,10 @@ import {
 import { queryWishlist } from "../src/lib/query";
 import { demoItems } from "../src/lib/demo-data";
 import { safeUrl, latestPrice, priceDrop } from "../src/lib/types";
-import { normalizeBrightDataProduct } from "../src/lib/bright-data";
+import {
+  datasetFor,
+  normalizeBrightDataProduct,
+} from "../src/lib/bright-data";
 
 test("blocks private, loopback, link-local, IPv4-mapped loopback and credentials", () => {
   for (const ip of [
@@ -124,4 +127,13 @@ test("normalizes a Bright Data product without confusing original and current pr
   assert.equal(product.availability, "in_stock");
   assert.match(product.notes ?? "", /Original price: 9999/);
   assert.match(product.notes ?? "", /ANC/);
+});
+
+test("selects specific retailer datasets and leaves unknown stores to metadata extraction", () => {
+  assert.equal(datasetFor("www.flipkart.com"), "gd_mljhtaoe2n284ux79e");
+  assert.equal(datasetFor("nike.com"), "gd_mlhzncrq29jig30p2a");
+  assert.equal(datasetFor("www.adidas.co.in"), "gd_ml5c00bomtfxs56vl");
+  assert.equal(datasetFor("samsung.com"), "");
+  assert.equal(datasetFor("lg.com"), "");
+  assert.equal(datasetFor("notnike.com"), "");
 });
