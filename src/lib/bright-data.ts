@@ -2,7 +2,37 @@ import type { ExtractedProduct } from "./types";
 
 type Json = Record<string, unknown>;
 
-const AMAZON_DATASET_ID = "gd_l7q7dkf244hwjntr0";
+const DATASET_BY_RETAILER = {
+  amazon: "gd_l7q7dkf244hwjntr0",
+  flipkart: "gd_mljhtaoe2n284ux79e",
+  nike: "gd_mlhzncrq29jig30p2a",
+  adidas: "gd_ml5c00bomtfxs56vl",
+} as const;
+
+function hostMatches(hostname: string, domain: string) {
+  const host = hostname.toLowerCase().replace(/^www\./, "");
+  const target = domain.toLowerCase().replace(/^www\./, "");
+  return host === target || host.endsWith(`.${target}`);
+}
+
+function configuredDatasets(): Record<string, string> {
+  const value = process.env.BRIGHT_DATA_DATASET_MAP;
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>)
+        .filter((entry): entry is [string, string] =>
+          Boolean(entry[0] && typeof entry[1] === "string" && entry[1].trim()),
+        )
+        .map(([domain, id]) => [domain.toLowerCase(), id.trim()]),
+    );
+  } catch {
+    console.info("Ignoring invalid BRIGHT_DATA_DATASET_MAP JSON.");
+    return {};
+  }
+}
 
 function text(value: unknown, max = 2000): string {
   if (typeof value === "string") return value.trim().slice(0, max);
@@ -60,17 +90,28 @@ function retailerFor(hostname: string) {
   if (hostname.includes("amazon.")) return "Amazon";
   if (hostname.includes("flipkart.")) return "Flipkart";
   if (hostname.includes("myntra.")) return "Myntra";
+  if (hostMatches(hostname, "nike.com")) return "Nike";
+  if (hostname.includes("adidas.")) return "Adidas";
   return hostname.replace(/^www\./, "");
 }
 
-function datasetFor(hostname: string) {
+export function datasetFor(hostname: string) {
   if (hostname.includes("amazon."))
-    return process.env.BRIGHT_DATA_AMAZON_DATASET_ID || AMAZON_DATASET_ID;
+    return process.env.BRIGHT_DATA_AMAZON_DATASET_ID || DATASET_BY_RETAILER.amazon;
   if (hostname.includes("flipkart."))
-    return process.env.BRIGHT_DATA_FLIPKART_DATASET_ID || "";
+    return process.env.BRIGHT_DATA_FLIPKART_DATASET_ID || DATASET_BY_RETAILER.flipkart;
   if (hostname.includes("myntra."))
     return process.env.BRIGHT_DATA_MYNTRA_DATASET_ID || "";
-  return process.env.BRIGHT_DATA_PRODUCT_DATASET_ID || "";
+  if (hostMatches(hostname, "nike.com"))
+    return process.env.BRIGHT_DATA_NIKE_DATASET_ID || DATASET_BY_RETAILER.nike;
+  if (hostname.includes("adidas."))
+    return process.env.BRIGHT_DATA_ADIDAS_DATASET_ID || DATASET_BY_RETAILER.adidas;
+
+  const configured = configuredDatasets();
+  const domain = Object.keys(configured)
+    .sort((a, b) => b.length - a.length)
+    .find((candidate) => hostMatches(hostname, candidate));
+  return domain ? configured[domain] : "";
 }
 
 function details(record: Json): string {
