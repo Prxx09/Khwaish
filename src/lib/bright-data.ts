@@ -212,7 +212,7 @@ export function normalizeBrightDataProduct(
       text(first(record, ["url", "product_url", "origin_url"]), 3000) ||
       requestedUrl,
     image_url: imageUrl(
-      first(record, ["images", "image_urls", "image_url", "thumbnail"]),
+      first(record, ["images", "image_urls", "image_url", "image", "main_image", "thumbnail"]),
     ),
     price: amount(
       first(record, [
@@ -240,11 +240,10 @@ export function normalizeBrightDataProduct(
     ),
     variant,
     availability:
-      availability === true || /in.stock|available/.test(availabilityText)
-        ? "in_stock"
-        : availability === false ||
-            /out.of.stock|unavailable|sold.out/.test(availabilityText)
-          ? "out_of_stock"
+      availability === false || /out.of.stock|unavailable|sold.out/.test(availabilityText)
+        ? "out_of_stock"
+        : availability === true || /in.stock|available/.test(availabilityText)
+          ? "in_stock"
           : "unknown",
     notes: details(record),
     source: "bright_data",

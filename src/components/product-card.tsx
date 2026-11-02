@@ -31,7 +31,7 @@ export default function ProductCard({
           aria-label={`View ${item.product_name}`}
         >
           <ProductImage
-            src={item.product_media?.[0]?.signed_url || item.image_url}
+            src={item.image_url || item.product_media?.[0]?.signed_url}
             name={item.product_name}
           />
           <span className="image-explore" aria-hidden="true">

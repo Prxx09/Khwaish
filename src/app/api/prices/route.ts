@@ -55,6 +55,14 @@ export async function POST(request: NextRequest) {
       .single();
     if (insertError)
       throw new Error("You need editor access to record a price check.");
+    // Keep the latest retailer image for subsequent visits, too.
+    if (metadata.image_url) {
+      const { error: imageError } = await auth.client
+        .from("wishlist_items")
+        .update({ image_url: metadata.image_url })
+        .eq("id", itemId);
+      if (imageError) metadata.warning = "Price refreshed. The new image could not be saved.";
+    }
     return NextResponse.json(
       { observation: data, metadata },
       { headers: { "Cache-Control": "private, no-store" } },
