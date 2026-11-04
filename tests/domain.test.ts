@@ -7,6 +7,11 @@ import {
   validateProductUrl,
 } from "../src/lib/product-metadata";
 import { queryWishlist } from "../src/lib/query";
+test("Amazon page fallback reads the selling price and retailer image, not list price", () => {
+  const p = extractProduct('<title>Watch</title><div id="corePrice_feature_div"><span class="a-price a-text-price"><span class="a-offscreen">₹9,000</span></span><span class="a-price"><span class="a-offscreen">₹7,500</span></span></div><img id="landingImage" src="https://images.example/watch.jpg">', "https://www.amazon.in/dp/B012345678");
+  assert.equal(p.price, 7500);
+  assert.equal(p.image_url, "https://images.example/watch.jpg");
+});
 import { demoItems } from "../src/lib/demo-data";
 import { safeUrl, latestPrice, priceDrop } from "../src/lib/types";
 import {

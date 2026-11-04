@@ -727,6 +727,7 @@ export default function Workspace() {
         i.id === item.id
           ? {
               ...i,
+              image_url: data.metadata?.image_url || i.image_url,
               price_observations: [...i.price_observations, data.observation],
             }
           : i,

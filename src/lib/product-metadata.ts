@@ -195,7 +195,8 @@ export function extractProduct(html: string, url: string): ExtractedProduct {
   const price = parsePrice(
     offer.price ??
       priceSpec.price ??
-      (meta("product:price:amount") || meta("og:price:amount")),
+      (meta("product:price:amount") || meta("og:price:amount") ||
+        $("#corePrice_feature_div .a-price:not(.a-text-price) .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen").first().text()),
   );
   const images = Array.isArray(p.image) ? p.image : p.image ? [p.image] : [];
   const image = images[0];
@@ -234,7 +235,7 @@ export function extractProduct(html: string, url: string): ExtractedProduct {
     image_url: absoluteImage(
       typeof image === "object" && image
         ? string((image as Json).url)
-        : string(image) || meta("og:image"),
+        : string(image) || meta("og:image") || $("#landingImage, #imgBlkFront").first().attr("data-old-hires") || $("#landingImage, #imgBlkFront").first().attr("src") || "",
       url,
     ),
     price,
@@ -281,6 +282,15 @@ export async function getProductMetadata(url: string) {
     console.info("Bright Data product import fallback");
   }
   const page = await fetchPublicPage(validated);
+  // Short retailer URLs must resolve before choosing a site-specific scraper.
+  if (new URL(page.url).hostname !== new URL(validated).hostname) {
+    try {
+      const resolvedProduct = await getBrightDataProduct(page.url);
+      if (resolvedProduct) return resolvedProduct;
+    } catch {
+      providerWarning = "The store extractor could not complete this check. Public page details are shown; missing prices or images remain unknown.";
+    }
+  }
   const product = extractProduct(page.html, page.url);
   return providerWarning
     ? {

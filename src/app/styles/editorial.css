@@ -1,6 +1,43 @@
 /* Presentation only. Shared surfaces retain their existing semantics and events. */
 @layer editorial {
   :root {
+    --glass-surface: #202723d9;
+    --glass-stroke: #ffffff26;
+    --glass-shine: inset 0 1px 0 #ffffff24, 0 8px 32px #00000014;
+  }
+  [data-theme="light"] { --glass-surface: #ffffffc9; --glass-stroke: #ffffffdc; }
+  .app-header, .mobile-nav, .account-menu, .modal, .sheet {
+    background: var(--glass-surface);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid var(--glass-stroke);
+    box-shadow: var(--glass-shine);
+  }
+  .btn.secondary, .theme-toggle, .view-toggle, .capture-tabs, .detail-tabs, .category-tabs button {
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: var(--glass-shine);
+  }
+  .modal::backdrop, .sheet::backdrop { background: #080d163d; backdrop-filter: blur(10px); }
+  .modal.product-experience { width: min(1120px, calc(100vw - 48px)); max-width: 1120px; max-height: calc(100dvh - 48px); border-radius: 30px; margin: auto; }
+  .product-experience .modal-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 36px; padding: 32px; }
+  .product-experience .modal-head { grid-column: 1 / -1; margin: 0; }
+  .product-experience .detail-image { grid-column: 1; grid-row: 2 / span 3; min-height: 340px; height: 100%; border-radius: 24px; }
+  .product-experience .detail-image img { max-height: 470px; object-fit: contain; }
+  .product-experience .detail-price { grid-column: 2; }
+  .product-experience .detail-title, .product-experience .price-disclaimer { grid-column: 2; }
+  .product-experience .detail-tabs, .product-experience .detail-section, .product-experience .detail-actions { grid-column: 1 / -1; }
+  @media (max-width: 767px) {
+    .modal.product-experience { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 22px; }
+    .product-experience .modal-content { display: block; padding: 20px; }
+    .product-experience .detail-image { min-height: 220px; margin-block: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog[open] { animation: glass-arrive 220ms var(--ease) both; }
+    @keyframes glass-arrive { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+  }
+  @supports not (backdrop-filter: blur(1px)) { .app-header, .mobile-nav, .account-menu, .modal, .sheet { background: var(--panel); } }
+  :root {
     --bg: #171917;
     --panel: #20231f;
     --panel-2: #2a2e28;

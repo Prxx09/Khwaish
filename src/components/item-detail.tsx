@@ -39,84 +39,6 @@ type Offer = {
   url: string;
   image: string | null;
 };
-function HistoryChart({ item }: { item: Item }) {
-  const observations = [...item.price_observations]
-    .filter(
-      (p) => p.price != null && p.currency.trim() === item.currency.trim(),
-    )
-    .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at));
-  const values = [
-    ...(item.initial_price != null
-      ? [
-          {
-            price: item.initial_price,
-            observed_at: item.initial_price_at ?? item.created_at,
-          },
-        ]
-      : []),
-    ...observations,
-  ];
-  if (!values.length)
-    return (
-      <p className="muted">
-        Add a saved price or check the store to start your history.
-      </p>
-    );
-  const min = Math.min(...values.map((p) => p.price!));
-  const max = Math.max(...values.map((p) => p.price!));
-  const range = max - min || Math.max(max * 0.1, 1);
-  const points = values
-    .map(
-      (p, i) =>
-        `${20 + (i / Math.max(values.length - 1, 1)) * 360},${130 - ((p.price! - min) / range) * 100}`,
-    )
-    .join(" ");
-  return (
-    <div className="chart-wrap">
-      <div className="chart-scale">
-        <span>{money(max, item.currency)}</span>
-        <span>{money(min, item.currency)}</span>
-      </div>
-      <svg
-        viewBox="0 0 400 160"
-        role="img"
-        aria-label={`Price history with ${values.length} observations, from ${money(values[0].price, item.currency)} to ${money(values[values.length - 1].price, item.currency)}`}
-      >
-        <defs>
-          <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity=".22" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`M ${points.split(" ").join(" L ")} L ${values.length > 1 ? 380 : 20} 155 L 20 155 Z`}
-          fill="url(#chartFade)"
-        />
-        <polyline
-          points={points}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {values.map((p, i) => (
-          <circle
-            key={i}
-            cx={20 + (i / Math.max(values.length - 1, 1)) * 360}
-            cy={130 - ((p.price! - min) / range) * 100}
-            r="4"
-            fill="currentColor"
-          />
-        ))}
-      </svg>
-      <div className="chart-dates">
-        <span>When saved</span>
-        <span>Latest check</span>
-      </div>
-    </div>
-  );
-}
 export default function ItemDetail({
   item,
   onClose,
@@ -408,11 +330,12 @@ export default function ItemDetail({
       }}
       title={item.product_name}
       subtitle={`${item.retailer || "Saved wish"} · Saved ${new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
-      sheet
+      wide
+      className="product-experience"
     >
       <div className="detail-image">
         <ProductImage
-          src={item.product_media?.[0]?.signed_url || item.image_url}
+          src={item.image_url || item.product_media?.[0]?.signed_url}
           name={item.product_name}
         />
         <span className="pill">{item.category || "Other"}</span>
@@ -467,7 +390,6 @@ export default function ItemDetail({
       <div className="detail-tabs" role="tablist" aria-label="Product details">
         {[
           { id: "overview", label: "Details" },
-          { id: "history", label: "Price history" },
           { id: "compare", label: "Compare" },
           { id: "notes", label: "Conversation" },
         ].map((t) => (
@@ -690,58 +612,6 @@ export default function ItemDetail({
               </div>
             )}
           </form>
-        )}
-        {tab === "history" && (
-          <div className="detail-section">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">THE LONG GAME</span>
-                <h3>Good things come to those who watch.</h3>
-              </div>
-            </div>
-            <div className="history-summary">
-              <div>
-                <span>When saved</span>
-                <strong>{money(item.initial_price, item.currency)}</strong>
-              </div>
-              <div>
-                <span>Change since saving</span>
-                <strong className={drop > 0 ? "green-text" : ""}>
-                  {drop > 0
-                    ? `−${money(drop, item.currency)}`
-                    : "No recorded drop"}
-                </strong>
-              </div>
-            </div>
-            <HistoryChart item={item} />
-            <div className="history-list">
-              {[...item.price_observations]
-                .sort(
-                  (a, b) =>
-                    Date.parse(b.observed_at) - Date.parse(a.observed_at),
-                )
-                .map((p) => (
-                  <div key={p.id}>
-                    <span>
-                      {new Date(p.observed_at).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                      <small>
-                        {p.source.replaceAll("_", " ")} ·{" "}
-                        {p.availability.replaceAll("_", " ")}
-                      </small>
-                    </span>
-                    <strong>{money(p.price, p.currency)}</strong>
-                  </div>
-                ))}
-            </div>
-            <p className="notice">
-              Tracking begins when you save a product. Prices are observations,
-              not a guarantee of checkout price or historical retailer lows.
-            </p>
-          </div>
         )}
         {tab === "compare" && (
           <div className="detail-section">
