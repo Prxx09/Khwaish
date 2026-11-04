@@ -87,14 +87,6 @@ export function Modal({
       }
     };
   }, [open]);
-  useEffect(() => {
-    if (!open) return;
-    const old = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = old;
-    };
-  }, [open]);
   return (
     <dialog
       ref={ref}
