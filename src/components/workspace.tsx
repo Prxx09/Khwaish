@@ -60,7 +60,6 @@ import ProductCard from "./product-card";
 import PriceWatch from "./price-watch";
 import ItemDetail from "./item-detail";
 import SharingDialog from "./sharing-dialog";
-import { WishOrbit } from "./wish-orbit";
 import SearchField from "./search-field";
 import { createWishMatcher } from "./wish-search";
 
@@ -120,11 +119,10 @@ export default function Workspace() {
   const [pendingQuestion, setPendingQuestion] = useState("");
   const [queryBusy, setQueryBusy] = useState(false);
   const queryVersion = useRef(0);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (view !== "ask") return;
-    const scroll = chatScrollRef.current;
-    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    if (view === "ask" && (chatTurns.length || pendingQuestion))
+      chatEndRef.current?.scrollIntoView({ block: "end" });
   }, [view, chatTurns.length, pendingQuestion]);
   useEffect(() => {
     queryVersion.current++;
@@ -1591,7 +1589,7 @@ export default function Workspace() {
             <section className="chat-page" aria-label="Ask Khwaish">
               <header className="chat-header">
                 <h1>
-                  Ask <em>Khwaish.</em>
+                  Ask Khwaish
                 </h1>
                 <div className="query-scope">
                   <button
@@ -1634,7 +1632,7 @@ export default function Workspace() {
                   </span>
                 </div>
               </header>
-              <div className="chat-scroll" ref={chatScrollRef}>
+              <div className="chat-scroll">
                 {chatTurns.length || pendingQuestion ? (
                   <section
                     className="chat-transcript"
@@ -1724,11 +1722,10 @@ export default function Workspace() {
                   </section>
                 ) : (
                   <div className="chat-welcome">
-                    <WishOrbit compact />
                     <h2>
                       {chatScopeItems.length
                         ? "What’s on your mind?"
-                        : "Your wishes start the conversation."}
+                        : "What would you like to find?"}
                     </h2>
                     <p>
                       {chatScopeItems.length
@@ -1765,9 +1762,7 @@ export default function Workspace() {
                     maxLength={500}
                     aria-label="Ask your wishlist"
                     placeholder={
-                      chatSuggestions[0]
-                        ? `${chatSuggestions[0]}…`
-                        : "Ask about your saved wishes…"
+                      "Ask about your saved wishes…"
                     }
                   />
                   <button
@@ -1787,6 +1782,7 @@ export default function Workspace() {
                   Answers use saved wishlist details and recorded prices.
                 </p>
               </div>
+              <div ref={chatEndRef} aria-hidden="true" />
             </section>
           )}
           {view === "settings" && (
