@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { createClient } from "./supabase/server";
 export async function authorized(action: string) {
   const client = await createClient();
@@ -38,7 +39,13 @@ export function apiError(
   error: unknown,
   fallback = "Something went wrong. Please try again.",
 ) {
-  const message = error instanceof Error ? error.message : fallback;
+  const message = error instanceof ZodError
+    ? error.issues.map((issue) =>
+        issue.path.join(".") === "url"
+          ? "Enter a valid product URL, including https://."
+          : issue.message,
+      ).join(" ")
+    : error instanceof Error ? error.message : fallback;
   console.error("Request failed:", message.slice(0, 300));
   return NextResponse.json({ error: message }, { status: 422 });
 }
