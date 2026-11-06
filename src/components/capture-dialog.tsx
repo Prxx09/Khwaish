@@ -229,6 +229,14 @@ export default function CaptureDialog({
   async function extractLink() {
     setError("");
     setNotice("");
+    try {
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password)
+        throw new Error("Invalid product URL");
+    } catch {
+      setError("Enter a valid public product URL, including https://.");
+      return;
+    }
     if (isDemo) {
       setDraft((d) => ({ ...d, product_url: url }));
       setReady(true);
@@ -395,6 +403,8 @@ export default function CaptureDialog({
             className={tab === id ? "active" : ""}
             onClick={() => {
               setTab(id);
+              setError("");
+              setNotice("");
               if (id === "manual") setReady(true);
             }}
           >
@@ -556,7 +566,16 @@ export default function CaptureDialog({
         </details>
       )}
       {ready && (
-        <form className="capture-form" onSubmit={submit}>
+        <form
+          className="capture-form"
+          onSubmit={submit}
+          onInvalidCapture={(event) => {
+            const input = event.target as HTMLInputElement;
+            const details = input.closest("details");
+            if (details) details.open = true;
+            setError(input.validationMessage || "Review the highlighted field.");
+          }}
+        >
           <div className="capture-preview">
             <ProductImage
               src={draft.image_url || preview}

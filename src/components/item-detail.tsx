@@ -16,6 +16,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import {
   currentPrice,
+  CATEGORIES,
   latestPrice,
   money,
   priceDrop,
@@ -69,6 +70,7 @@ export default function ItemDetail({
   const [date, setDate] = useState(item.target_date ?? "");
   const [status, setStatus] = useState(item.status);
   const [priority, setPriority] = useState(item.priority);
+  const [category, setCategory] = useState(item.category || "Other");
   const [tracking, setTracking] = useState(item.tracking_enabled ?? false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const dirty =
@@ -80,6 +82,7 @@ export default function ItemDetail({
     date !== (item.target_date ?? "") ||
     status !== item.status ||
     priority !== item.priority ||
+    category !== (item.category || "Other") ||
     tracking !== (item.tracking_enabled ?? false);
   function discard() {
     setName(item.product_name);
@@ -90,6 +93,7 @@ export default function ItemDetail({
     setDate(item.target_date ?? "");
     setStatus(item.status);
     setPriority(item.priority);
+    setCategory(item.category || "Other");
     setTracking(item.tracking_enabled ?? false);
     setError("");
   }
@@ -177,6 +181,7 @@ export default function ItemDetail({
           target_date: date || null,
           status,
           priority,
+          category,
           tracking_enabled: tracking,
         })
       ) {
@@ -487,6 +492,13 @@ export default function ItemDetail({
                 maxLength={240}
                 required
               />
+            </label>
+            <label>
+              Category
+              <select value={category} disabled={!canEdit} onChange={(event) => setCategory(event.target.value)}>
+                {!CATEGORIES.includes(category) && <option value={category}>{category}</option>}
+                {CATEGORIES.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
             </label>
             <label>
               Variant / size / color
